@@ -53,3 +53,48 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Apple-style (iOS) 12-blade activity indicator */
+.ios-spinner {
+  position: relative;
+  display: inline-block;
+}
+.ios-spinner-blade {
+  position: absolute;
+  top: 0;
+  left: 46%;
+  width: 8%;
+  height: 28%;
+  border-radius: 40%;
+  background: currentColor;
+  opacity: 0.25;
+  transform-origin: 50% 178%;
+  animation: ios-spinner-fade 1s linear infinite;
+}
+@keyframes ios-spinner-fade {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.25;
+  }
+}
+
+/* Shimmering skeleton placeholder, used while list data loads */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

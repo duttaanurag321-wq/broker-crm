@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import TopBar from '../components/TopBar.jsx'
 import LeadCard from '../components/LeadCard.jsx'
+import { ListSkeleton } from '../components/Loader.jsx'
 import { OPEN_STAGES, STAGE_MAP } from '../lib/constants.js'
 
 export default function Pipeline() {
@@ -55,7 +56,7 @@ export default function Pipeline() {
       </div>
 
       <div className="px-4 space-y-3 pb-4">
-        {loading && <p className="text-center text-muted text-sm py-10">Loading pipeline…</p>}
+        {loading && <ListSkeleton rows={5} />}
         {!loading && filtered.length === 0 && (
           <p className="text-center text-muted text-sm py-14">No leads in this stage yet.</p>
         )}

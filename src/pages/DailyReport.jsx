@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import TopBar from '../components/TopBar.jsx'
+import { PageLoader } from '../components/Loader.jsx'
 import { CALL_OUTCOMES } from '../lib/constants.js'
 import { todayStr, formatDateHuman, localDayBoundsUTC } from '../lib/helpers.js'
 import { IconReports } from '../components/Icons.jsx'
@@ -42,7 +43,26 @@ export default function DailyReport() {
     })
     const answered = latestPerLead.size - outcomeCounts.NP - outcomeCounts.NR - outcomeCounts.OFF
 
-    const stageMoves = (key) => (acts || []).filter((a) => a.stage_at_time === key).length
+    // Pipeline movement must reflect leads, not call log rows — calling the
+    // same lead 3 times in a day and marking "SV Scheduled" each time is
+    // still ONE lead scheduled, not three. `latestPerLead` already collapses
+    // that. It also needs to only count a stage if the lead's CURRENT status
+    // still matches — if the mark got changed or undone later, it should
+    // drop out of the report instead of lingering forever.
+    const leadIds = Array.from(latestPerLead.keys())
+    let statusMap = new Map()
+    if (leadIds.length) {
+      const { data: currentLeads } = await supabase.from('leads').select('id,status').in('id', leadIds)
+      statusMap = new Map((currentLeads || []).map((l) => [l.id, l.status]))
+    }
+
+    const stageMoves = (key) => {
+      let count = 0
+      latestPerLead.forEach((a, leadId) => {
+        if (a.stage_at_time === key && statusMap.get(leadId) === key) count++
+      })
+      return count
+    }
 
     setStats({
       totalLeadsContacted: latestPerLead.size,
@@ -79,7 +99,7 @@ export default function DailyReport() {
       </div>
 
       {loading || !stats ? (
-        <p className="text-center text-muted text-sm py-14">Crunching the numbers…</p>
+        <PageLoader label="Crunching the numbers…" />
       ) : (
         <div className="px-4 space-y-4 pb-8">
           <div className="grid grid-cols-2 gap-3">

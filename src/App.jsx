@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useAuth } from './lib/AuthContext.jsx'
 import BottomNav from './components/BottomNav.jsx'
+import { SplashLoader } from './components/Loader.jsx'
 import Login from './pages/Login.jsx'
 import TodayWork from './pages/TodayWork.jsx'
 import Pipeline from './pages/Pipeline.jsx'
@@ -27,14 +28,6 @@ function Protected({ children }) {
   if (loading) return <SplashLoader />
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />
   return children
-}
-
-function SplashLoader() {
-  return (
-    <div className="h-screen w-screen flex items-center justify-center bg-base">
-      <div className="h-9 w-9 rounded-full border-2 border-line border-t-accent animate-spin" />
-    </div>
-  )
 }
 
 export default function App() {

@@ -5,6 +5,7 @@ import TopBar from '../components/TopBar.jsx'
 import RingProgress from '../components/RingProgress.jsx'
 import LeadCard from '../components/LeadCard.jsx'
 import FollowUpSheet from '../components/FollowUpSheet.jsx'
+import { ListSkeleton } from '../components/Loader.jsx'
 import { IconFire } from '../components/Icons.jsx'
 import { todayStr, localDayBoundsUTC } from '../lib/helpers.js'
 
@@ -35,8 +36,18 @@ export default function TodayWork() {
       .gte('created_at', startISO)
       .lte('created_at', endISO)
 
+    // A lead only counts as "done today" if it was logged today AND its
+    // follow-up is no longer due today (pushed to a future date, or the
+    // lead was closed). Previously this checked "any activity today" —
+    // which meant logging a call and rescheduling the very same lead for
+    // *later today* made it vanish from the list, even though it was
+    // still due. Cross-checking against the freshly-fetched `due` set
+    // fixes that: a same-day reschedule keeps the lead visible.
+    const dueIds = new Set((due || []).map((l) => l.id))
+    const doneToday = new Set((todaysActivities || []).map((a) => a.lead_id).filter((id) => !dueIds.has(id)))
+
     setLeads(due || [])
-    setDoneLeadIds(new Set((todaysActivities || []).map((a) => a.lead_id)))
+    setDoneLeadIds(doneToday)
     setLoading(false)
   }, [user.id])
 
@@ -101,7 +112,7 @@ export default function TodayWork() {
       </div>
 
       <div className="px-4 mt-5 space-y-3">
-        {loading && <p className="text-center text-muted text-sm py-10">Loading today's list…</p>}
+        {loading && <ListSkeleton rows={4} />}
         {!loading && pendingLeads.length === 0 && (
           <div className="text-center py-16">
             <p className="text-5xl mb-3">✅</p>

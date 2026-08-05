@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase.js'
 import TopBar from '../components/TopBar.jsx'
 import { StagePill, OutcomePill } from '../components/Pills.jsx'
 import FollowUpSheet from '../components/FollowUpSheet.jsx'
+import { PageLoader } from '../components/Loader.jsx'
 import { IconWhatsapp, IconCall, IconCalendar } from '../components/Icons.jsx'
 import {
   displayPhone,
@@ -40,7 +41,7 @@ export default function LeadDetail() {
     return (
       <div>
         <TopBar title="Lead" back />
-        <p className="text-center text-muted text-sm py-14">Loading…</p>
+        <PageLoader label="Loading lead…" />
       </div>
     )
   }
