@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import TopBar from '../components/TopBar.jsx'
 import { CALL_OUTCOMES } from '../lib/constants.js'
-import { todayStr, formatDateHuman } from '../lib/helpers.js'
+import { todayStr, formatDateHuman, localDayBoundsUTC } from '../lib/helpers.js'
 import { IconReports } from '../components/Icons.jsx'
 
 export default function DailyReport() {
@@ -15,26 +15,37 @@ export default function DailyReport() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const start = `${date}T00:00:00`
-    const end = `${date}T23:59:59.999`
+    const { startISO, endISO } = localDayBoundsUTC(date)
 
     const [{ data: acts }, { data: newLeads }] = await Promise.all([
-      supabase.from('activities').select('*').eq('user_id', user.id).gte('created_at', start).lte('created_at', end),
-      supabase.from('leads').select('id').eq('assigned_to', user.id).gte('created_at', start).lte('created_at', end)
+      supabase
+        .from('activities')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('created_at', startISO)
+        .lte('created_at', endISO)
+        .order('created_at', { ascending: true }),
+      supabase.from('leads').select('id').eq('assigned_to', user.id).gte('created_at', startISO).lte('created_at', endISO)
     ])
 
     const calls = (acts || []).filter((a) => a.type === 'call')
+
+    // A lead called 2-3 times in one day should count once, with its
+    // latest outcome for the day — the report reflects leads, not calls.
+    const latestPerLead = new Map()
+    calls.forEach((a) => latestPerLead.set(a.lead_id, a)) // acts sorted ascending, so last write wins = latest
+
     const outcomeCounts = {}
     CALL_OUTCOMES.forEach((o) => (outcomeCounts[o.key] = 0))
-    calls.forEach((a) => {
+    latestPerLead.forEach((a) => {
       if (a.call_outcome && outcomeCounts[a.call_outcome] !== undefined) outcomeCounts[a.call_outcome]++
     })
-    const answered = outcomeCounts.IN + outcomeCounts.NI
+    const answered = latestPerLead.size - outcomeCounts.NP - outcomeCounts.NR - outcomeCounts.OFF
 
     const stageMoves = (key) => (acts || []).filter((a) => a.stage_at_time === key).length
 
     setStats({
-      totalCalls: calls.length,
+      totalLeadsContacted: latestPerLead.size,
       answered,
       totalLeads: (newLeads || []).length,
       outcomeCounts,
@@ -72,14 +83,19 @@ export default function DailyReport() {
       ) : (
         <div className="px-4 space-y-4 pb-8">
           <div className="grid grid-cols-2 gap-3">
-            <Stat label="Total calls" value={stats.totalCalls} color="#0071E3" />
-            <Stat label="Answered calls" value={stats.answered} color="#34C759" sub={stats.totalCalls ? `${Math.round((stats.answered / stats.totalCalls) * 100)}% connect rate` : null} />
+            <Stat label="Leads called" value={stats.totalLeadsContacted} color="#0071E3" />
+            <Stat
+              label="Answered"
+              value={stats.answered}
+              color="#34C759"
+              sub={stats.totalLeadsContacted ? `${Math.round((stats.answered / stats.totalLeadsContacted) * 100)}% connect rate` : null}
+            />
             <Stat label="New leads received" value={stats.totalLeads} color="#5E5CE6" />
             <Stat label="Won today" value={stats.won} color="#34C759" />
           </div>
 
-          <Section title="Call outcomes">
-            <div className="grid grid-cols-5 gap-2">
+          <Section title="Leads by outcome">
+            <div className="grid grid-cols-3 gap-2">
               {CALL_OUTCOMES.map((o) => (
                 <div key={o.key} className="bg-white rounded-xl border border-line/60 py-3 text-center">
                   <p className="text-lg font-bold" style={{ color: o.color }}>

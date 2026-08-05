@@ -37,10 +37,11 @@ export default function BulkUpload() {
     setMapping({
       name: guessField(hdrs, ['name']),
       phone: guessField(hdrs, ['phone', 'mobile', 'contact']),
-      budget_min: guessField(hdrs, ['budget min', 'min budget', 'budget_min']),
-      budget_max: guessField(hdrs, ['budget max', 'max budget', 'budget_max', 'budget']),
+      budget_max: guessField(hdrs, ['budget', 'max budget', 'budget_max']),
+      sqft: guessField(hdrs, ['sqft', 'sq ft', 'square feet']),
+      katha: guessField(hdrs, ['katha']),
       source: guessField(hdrs, ['source']),
-      property_type: guessField(hdrs, ['property', 'type']),
+      profession: guessField(hdrs, ['profession', 'occupation']),
       location_preference: guessField(hdrs, ['location', 'area', 'preference']),
       notes: guessField(hdrs, ['note', 'remark'])
     })
@@ -91,10 +92,11 @@ export default function BulkUpload() {
       .map((r) => ({
         name: (r[mapping.name] || '').trim(),
         phone: normalizeIndianPhone(r[mapping.phone] || ''),
-        budget_min: mapping.budget_min ? r[mapping.budget_min] || null : null,
         budget_max: mapping.budget_max ? r[mapping.budget_max] || null : null,
+        sqft: mapping.sqft ? r[mapping.sqft] || null : null,
+        katha: mapping.katha ? r[mapping.katha] || null : null,
         source: mapping.source ? r[mapping.source] || 'Other' : 'Other',
-        property_type: mapping.property_type ? r[mapping.property_type] || 'Apartment' : 'Apartment',
+        profession: mapping.profession ? r[mapping.profession] || null : null,
         location_preference: mapping.location_preference ? r[mapping.location_preference] || null : null,
         notes: mapping.notes ? r[mapping.notes] || null : null,
         status: 'new',
@@ -163,9 +165,10 @@ export default function BulkUpload() {
               ['name', 'Name', true],
               ['phone', 'Phone', true],
               ['source', 'Source', false],
-              ['property_type', 'Property type', false],
-              ['budget_min', 'Budget min', false],
-              ['budget_max', 'Budget max', false],
+              ['profession', 'Profession', false],
+              ['budget_max', 'Budget', false],
+              ['sqft', 'Sqft', false],
+              ['katha', 'Katha', false],
               ['location_preference', 'Location', false],
               ['notes', 'Notes', false]
             ].map(([key, label, required]) => (

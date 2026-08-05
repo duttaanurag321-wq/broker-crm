@@ -13,8 +13,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Broker CRM',
-        short_name: 'Broker CRM',
+        name: 'Aster Realty',
+        short_name: 'Aster Realty',
         description: 'Real estate broker pipeline & lead CRM',
         theme_color: '#0071E3',
         background_color: '#F5F5F7',

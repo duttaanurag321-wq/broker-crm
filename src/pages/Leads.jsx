@@ -18,6 +18,7 @@ export default function Leads() {
       .from('leads')
       .select('*')
       .eq('assigned_to', user.id)
+      .not('status', 'in', '("won","lost")')
       .order('created_at', { ascending: false })
     setLeads(data || [])
     setLoading(false)
@@ -78,6 +79,9 @@ export default function Leads() {
         {filtered.map((lead) => (
           <LeadCard key={lead.id} lead={lead} />
         ))}
+        {!loading && leads.length > 0 && (
+          <p className="text-center text-[11px] text-muted pt-2 pb-4">Won and Lost leads are kept out of this list — nothing is deleted.</p>
+        )}
       </div>
     </div>
   )

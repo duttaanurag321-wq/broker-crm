@@ -3,16 +3,17 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import TopBar from '../components/TopBar.jsx'
-import { LEAD_SOURCES, PROPERTY_TYPES } from '../lib/constants.js'
+import { LEAD_SOURCES, SQFT_PER_KATHA } from '../lib/constants.js'
 import { normalizeIndianPhone, todayStr } from '../lib/helpers.js'
 
 const empty = {
   name: '',
   phone: '',
   source: LEAD_SOURCES[0],
-  property_type: PROPERTY_TYPES[0],
-  budget_min: '',
+  profession: '',
   budget_max: '',
+  sqft: '',
+  katha: '',
   location_preference: '',
   notes: '',
   next_action: 'Make first call',
@@ -45,6 +46,22 @@ export default function LeadForm() {
     setForm((f) => ({ ...f, [field]: value }))
   }
 
+  // Plot size fields auto-convert both ways — 1 katha = 720 sq ft.
+  function setSqft(value) {
+    setForm((f) => ({
+      ...f,
+      sqft: value,
+      katha: value === '' ? '' : (Number(value) / SQFT_PER_KATHA).toFixed(2).replace(/\.?0+$/, '')
+    }))
+  }
+  function setKatha(value) {
+    setForm((f) => ({
+      ...f,
+      katha: value,
+      sqft: value === '' ? '' : Math.round(Number(value) * SQFT_PER_KATHA)
+    }))
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
@@ -58,9 +75,10 @@ export default function LeadForm() {
         name: form.name.trim(),
         phone: normalizeIndianPhone(form.phone),
         source: form.source,
-        property_type: form.property_type,
-        budget_min: form.budget_min || null,
+        profession: form.profession || null,
         budget_max: form.budget_max || null,
+        sqft: form.sqft || null,
+        katha: form.katha || null,
         location_preference: form.location_preference || null,
         notes: form.notes || null,
         next_action: form.next_action || 'Make first call',
@@ -106,25 +124,32 @@ export default function LeadForm() {
               ))}
             </select>
           </Field>
-          <Field label="Property type">
-            <select value={form.property_type} onChange={(e) => set('property_type', e.target.value)} className="input">
-              {PROPERTY_TYPES.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
+          <Field label="Profession (optional)">
+            <input value={form.profession} onChange={(e) => set('profession', e.target.value)} className="input" placeholder="e.g. Businessman" />
           </Field>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Budget min (₹)">
-            <input type="number" value={form.budget_min} onChange={(e) => set('budget_min', e.target.value)} className="input" placeholder="4000000" />
-          </Field>
-          <Field label="Budget max (₹)">
-            <input type="number" value={form.budget_max} onChange={(e) => set('budget_max', e.target.value)} className="input" placeholder="5500000" />
-          </Field>
-        </div>
-        <Field label="Location preference">
-          <input value={form.location_preference} onChange={(e) => set('location_preference', e.target.value)} className="input" placeholder="Sevoke Road, Siliguri" />
+
+        <Field label="Budget (₹, optional)">
+          <input type="number" value={form.budget_max} onChange={(e) => set('budget_max', e.target.value)} className="input" placeholder="e.g. 5500000" />
         </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Sqft (optional)">
+            <input type="number" value={form.sqft} onChange={(e) => setSqft(e.target.value)} className="input" placeholder="e.g. 1440" />
+          </Field>
+          <Field label="Katha (optional)">
+            <input type="number" step="0.01" value={form.katha} onChange={(e) => setKatha(e.target.value)} className="input" placeholder="e.g. 2" />
+          </Field>
+        </div>
+        <p className="text-[11px] text-muted -mt-2">1 katha = 720 sqft — fill either one, the other fills itself.</p>
+
+        <Field label="Location (optional for a fresh cold lead)">
+          <input value={form.location_preference} onChange={(e) => set('location_preference', e.target.value)} className="input" placeholder="e.g. Sevoke Road, Siliguri" />
+        </Field>
+        <p className="text-[11px] text-muted -mt-2">
+          Fine to leave blank right now — you'll be asked for it when you log the first call if it's still empty.
+        </p>
+
         <Field label="Notes">
           <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} rows={3} className="input" placeholder="Anything relevant about this lead" />
         </Field>

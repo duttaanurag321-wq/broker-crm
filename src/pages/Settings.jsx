@@ -69,7 +69,7 @@ export default function Settings() {
           Sign out
         </button>
 
-        <p className="text-center text-xs text-muted pb-6">Broker CRM · built for the field, not the boardroom</p>
+        <p className="text-center text-xs text-muted pb-6">Aster Realty · built for the field, not the boardroom</p>
       </div>
     </div>
   )

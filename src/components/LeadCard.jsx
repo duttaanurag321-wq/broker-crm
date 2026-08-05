@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { StagePill, OutcomePill } from './Pills.jsx'
 import { IconWhatsapp, IconCall, IconCalendar } from './Icons.jsx'
-import { displayPhone, whatsappLink, telLink, formatDateHuman, formatTime, budgetRange } from '../lib/helpers.js'
+import { displayPhone, whatsappLink, telLink, formatDateHuman, formatTime, formatINRCompact } from '../lib/helpers.js'
 
 export default function LeadCard({ lead, onLogClick, showFollowUp = true }) {
   const navigate = useNavigate()
@@ -40,9 +40,10 @@ export default function LeadCard({ lead, onLogClick, showFollowUp = true }) {
       <div className="flex items-center gap-1.5 mt-3 flex-wrap">
         <StagePill stage={lead.status} />
         <OutcomePill code={lead.call_status} />
-        {lead.budget_min || lead.budget_max ? (
-          <span className="text-[11px] text-muted font-medium">{budgetRange(lead.budget_min, lead.budget_max)}</span>
+        {lead.budget_max ? (
+          <span className="text-[11px] text-muted font-medium">{formatINRCompact(lead.budget_max)}</span>
         ) : null}
+        {lead.katha ? <span className="text-[11px] text-muted font-medium">{lead.katha} katha</span> : null}
       </div>
 
       {showFollowUp && lead.next_followup_date && (

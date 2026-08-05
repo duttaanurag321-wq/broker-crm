@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import TopBar from '../components/TopBar.jsx'
 import LeadCard from '../components/LeadCard.jsx'
-import { STAGES } from '../lib/constants.js'
+import { OPEN_STAGES, STAGE_MAP } from '../lib/constants.js'
 
 export default function Pipeline() {
   const { user } = useAuth()
@@ -13,10 +13,13 @@ export default function Pipeline() {
 
   const load = useCallback(async () => {
     setLoading(true)
+    // Won/Lost are deliberately excluded — they're closed deals, not
+    // active pipeline. Nothing is deleted, they just don't clutter here.
     const { data } = await supabase
       .from('leads')
       .select('*')
       .eq('assigned_to', user.id)
+      .not('status', 'in', '("won","lost")')
       .order('updated_at', { ascending: false })
     setLeads(data || [])
     setLoading(false)
@@ -28,7 +31,7 @@ export default function Pipeline() {
 
   const counts = useMemo(() => {
     const c = { all: leads.length }
-    STAGES.forEach((s) => (c[s.key] = leads.filter((l) => l.status === s.key).length))
+    OPEN_STAGES.forEach((key) => (c[key] = leads.filter((l) => l.status === key).length))
     return c
   }, [leads])
 
@@ -36,18 +39,17 @@ export default function Pipeline() {
 
   return (
     <div>
-      <TopBar title="Pipeline" subtitle={`${leads.length} total leads`} />
+      <TopBar title="Pipeline" subtitle={`${leads.length} active leads`} />
 
       <div className="flex gap-2 px-4 py-3 overflow-x-auto">
         <Chip label="All" count={counts.all} active={activeStage === 'all'} onClick={() => setActiveStage('all')} />
-        {STAGES.map((s) => (
+        {OPEN_STAGES.map((key) => (
           <Chip
-            key={s.key}
-            label={s.label}
-            count={counts[s.key] || 0}
-            color={s.color}
-            active={activeStage === s.key}
-            onClick={() => setActiveStage(s.key)}
+            key={key}
+            label={STAGE_MAP[key].label}
+            count={counts[key] || 0}
+            active={activeStage === key}
+            onClick={() => setActiveStage(key)}
           />
         ))}
       </div>
@@ -65,7 +67,7 @@ export default function Pipeline() {
   )
 }
 
-function Chip({ label, count, active, color, onClick }) {
+function Chip({ label, count, active, onClick }) {
   return (
     <button
       onClick={onClick}

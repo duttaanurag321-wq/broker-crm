@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Sheet from './Sheet.jsx'
 import { CALL_OUTCOMES, STAGES } from '../lib/constants.js'
 import { supabase } from '../lib/supabase.js'
@@ -17,15 +17,33 @@ const QUICK_NEXT_ACTIONS = [
 export default function FollowUpSheet({ lead, open, onClose, onSaved }) {
   const { user } = useAuth()
   const [outcome, setOutcome] = useState(null)
-  const [stage, setStage] = useState(lead?.status || 'new')
+  const [stage, setStage] = useState('new')
   const [nextAction, setNextAction] = useState('')
   const [followDate, setFollowDate] = useState(todayStr())
   const [followTime, setFollowTime] = useState('')
   const [notes, setNotes] = useState('')
+  const [location, setLocation] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  // The sheet component stays mounted and gets reused for whichever
+  // lead was tapped — without this, the stage/outcome/etc from the
+  // previous lead would linger the next time it's opened.
+  useEffect(() => {
+    if (open && lead) {
+      setOutcome(null)
+      setStage(lead.status || 'new')
+      setNextAction('')
+      setFollowDate(todayStr())
+      setFollowTime('')
+      setNotes('')
+      setLocation(lead.location_preference || '')
+      setError('')
+    }
+  }, [open, lead?.id])
+
   const isFinal = stage === 'won' || stage === 'lost'
+  const needsLocation = !lead?.location_preference
 
   if (!lead) return null
 
@@ -33,6 +51,10 @@ export default function FollowUpSheet({ lead, open, onClose, onSaved }) {
     setError('')
     if (!outcome) {
       setError('Pick the call outcome first.')
+      return
+    }
+    if (needsLocation && !location.trim()) {
+      setError("This lead has no location yet — add one before logging the call.")
       return
     }
     if (!isFinal && (!nextAction.trim() || !followDate)) {
@@ -59,6 +81,7 @@ export default function FollowUpSheet({ lead, open, onClose, onSaved }) {
         .update({
           status: stage,
           call_status: outcome,
+          location_preference: needsLocation ? location.trim() : lead.location_preference,
           next_action: isFinal ? null : nextAction,
           next_followup_date: isFinal ? null : followDate,
           next_followup_time: isFinal ? null : followTime || null,
@@ -69,21 +92,12 @@ export default function FollowUpSheet({ lead, open, onClose, onSaved }) {
       if (leadErr) throw leadErr
 
       onSaved?.()
-      reset()
       onClose()
     } catch (e) {
       setError(e.message)
     } finally {
       setSaving(false)
     }
-  }
-
-  function reset() {
-    setOutcome(null)
-    setNextAction('')
-    setFollowDate(todayStr())
-    setFollowTime('')
-    setNotes('')
   }
 
   return (
@@ -107,6 +121,19 @@ export default function FollowUpSheet({ lead, open, onClose, onSaved }) {
             ))}
           </div>
         </div>
+
+        {needsLocation && (
+          <div>
+            <p className="text-sm font-semibold mb-2">Location (required — first call)</p>
+            <input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. Sevoke Road, Siliguri"
+              className="w-full rounded-xl border border-line px-3 py-2.5 text-sm bg-base"
+            />
+            <p className="text-[11px] text-muted mt-1">Now that you've spoken to them, pin down where they're looking.</p>
+          </div>
+        )}
 
         <div>
           <p className="text-sm font-semibold mb-2">Pipeline stage</p>

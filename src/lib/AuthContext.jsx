@@ -29,7 +29,12 @@ export function AuthProvider({ children }) {
       .eq('id', session.user.id)
       .single()
       .then(({ data }) => {
-        if (!cancelled) setProfile(data)
+        if (cancelled) return
+        // Fallback for the brief window right after signup where the
+        // profiles row may not have replicated yet, or its full_name
+        // wasn't set — use the name given at signup instead of blank.
+        const fallbackName = session.user.user_metadata?.full_name
+        setProfile(data ? { ...data, full_name: data.full_name || fallbackName } : { full_name: fallbackName })
       })
     return () => {
       cancelled = true

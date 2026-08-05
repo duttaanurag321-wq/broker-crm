@@ -11,7 +11,6 @@ import {
   telLink,
   formatDateHuman,
   formatTime,
-  budgetRange,
   formatINR
 } from '../lib/helpers.js'
 
@@ -80,8 +79,11 @@ export default function LeadDetail() {
           </div>
           <Row label="Phone" value={displayPhone(lead.phone)} />
           <Row label="Source" value={lead.source} />
-          <Row label="Property type" value={lead.property_type} />
-          <Row label="Budget" value={budgetRange(lead.budget_min, lead.budget_max)} sub={lead.budget_min || lead.budget_max ? `${formatINR(lead.budget_min)} – ${formatINR(lead.budget_max)}` : null} />
+          {lead.profession && <Row label="Profession" value={lead.profession} />}
+          <Row label="Budget" value={formatINR(lead.budget_max)} />
+          {(lead.sqft || lead.katha) && (
+            <Row label="Plot size" value={`${lead.sqft ? `${lead.sqft} sqft` : ''}${lead.sqft && lead.katha ? ' · ' : ''}${lead.katha ? `${lead.katha} katha` : ''}`} />
+          )}
           <Row label="Location" value={lead.location_preference || '—'} />
           {lead.notes && <Row label="Notes" value={lead.notes} />}
         </div>

@@ -16,12 +16,21 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.profiles where id = auth.uid() and role = 'admin'
+  );
+$$;
+
 create policy "profiles: read own or admin reads all"
   on public.profiles for select
-  using (
-    id = auth.uid()
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  using (id = auth.uid() or public.is_admin());
 
 create policy "profiles: update own"
   on public.profiles for update
@@ -53,9 +62,11 @@ create table if not exists public.leads (
   name text not null,
   phone text not null,
   source text,
-  property_type text,
+  profession text,
   budget_min numeric,
   budget_max numeric,
+  sqft numeric,
+  katha numeric,
   location_preference text,
   notes text,
   status text not null default 'new',
@@ -78,10 +89,7 @@ alter table public.leads enable row level security;
 
 create policy "leads: agents see their own, admins see all"
   on public.leads for select
-  using (
-    assigned_to = auth.uid()
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  using (assigned_to = auth.uid() or public.is_admin());
 
 create policy "leads: agents insert for themselves"
   on public.leads for insert
@@ -89,14 +97,11 @@ create policy "leads: agents insert for themselves"
 
 create policy "leads: agents update their own, admins update all"
   on public.leads for update
-  using (
-    assigned_to = auth.uid()
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  using (assigned_to = auth.uid() or public.is_admin());
 
 create policy "leads: admins can delete"
   on public.leads for delete
-  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+  using (public.is_admin());
 
 -- 3. ACTIVITIES (call log / follow-up history) ---------------------
 create table if not exists public.activities (
@@ -122,10 +127,7 @@ alter table public.activities enable row level security;
 
 create policy "activities: see own, admins see all"
   on public.activities for select
-  using (
-    user_id = auth.uid()
-    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  using (user_id = auth.uid() or public.is_admin());
 
 create policy "activities: insert own"
   on public.activities for insert

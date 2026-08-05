@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useAuth } from './lib/AuthContext.jsx'
 import BottomNav from './components/BottomNav.jsx'
 import Login from './pages/Login.jsx'
@@ -11,6 +12,14 @@ import BulkUpload from './pages/BulkUpload.jsx'
 import DailyReport from './pages/DailyReport.jsx'
 import SVReport from './pages/SVReport.jsx'
 import Settings from './pages/Settings.jsx'
+
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    document.getElementById('root')?.scrollTo(0, 0)
+  }, [pathname])
+  return null
+}
 
 function Protected({ children }) {
   const { user, loading } = useAuth()
@@ -33,6 +42,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-base">
+      <ScrollToTop />
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
         <Route

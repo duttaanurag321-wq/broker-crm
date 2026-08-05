@@ -78,8 +78,7 @@ export function formatINR(amount) {
 }
 
 // Compact form for big numbers, e.g. 4500000 -> ₹45L, 12000000 -> ₹1.2Cr
-export function formatINRCompact(amount) {
-  if (amount === null || amount === undefined || amount === '') return '—'
+export function formatINRCompact(amount) {  if (amount === null || amount === undefined || amount === '') return '—'
   const n = Number(amount)
   if (Number.isNaN(n)) return '—'
   if (n >= 10000000) return '₹' + trim(n / 10000000) + 'Cr'
@@ -96,4 +95,17 @@ export function budgetRange(min, max) {
   if (!min && !max) return '—'
   if (min && max) return `${formatINRCompact(min)} – ${formatINRCompact(max)}`
   return formatINRCompact(min || max)
+}
+
+// Turns a plain 'YYYY-MM-DD' (the user's *local* calendar day) into a
+// correct UTC start/end range for querying a `timestamptz` column.
+// Using `new Date('2026-08-05T00:00:00')` (no trailing Z) parses as
+// midnight in the browser's own timezone (IST for our users), then
+// .toISOString() converts that to the right UTC instant — this is what
+// avoids the ~5.5hr day-boundary bug you'd get from treating the string
+// as if it were already UTC.
+export function localDayBoundsUTC(dateStr) {
+  const start = new Date(`${dateStr}T00:00:00`)
+  const end = new Date(`${dateStr}T23:59:59.999`)
+  return { startISO: start.toISOString(), endISO: end.toISOString() }
 }

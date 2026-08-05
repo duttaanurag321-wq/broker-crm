@@ -19,6 +19,25 @@ needed beyond copy-paste — just follow the steps in order.
 
 ---
 
+## Fix Pack 1 — run this if you already set up Supabase before
+
+If you created your Supabase project before this update, run one more script to catch up your
+database — your data is untouched, this only fixes policies and adds a few columns.
+
+1. Supabase → **SQL Editor** → **New query**.
+2. Copy everything from `supabase/fix_pack_1.sql` in this project, paste it in, click **Run**.
+3. Refresh your app.
+
+This fixes:
+- The `infinite recursion detected in policy for relation "profiles"` error (and the blank name
+  on login, which was the same root cause).
+- Adds `profession`, `sqft`, `katha` columns and drops the old `property_type` column.
+
+If you're setting this up fresh, `schema.sql` already has all of this — just run that one file
+and skip `fix_pack_1.sql`.
+
+---
+
 ## Part 1 — Create your Supabase project (5 minutes)
 
 1. Go to [supabase.com](https://supabase.com) and sign up (free — GitHub login is fastest).

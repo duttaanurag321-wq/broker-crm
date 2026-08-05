@@ -42,10 +42,8 @@ export default function Login() {
     <div className="min-h-screen flex flex-col justify-center px-6 bg-base">
       <div className="max-w-sm mx-auto w-full">
         <div className="text-center mb-10">
-          <div className="h-16 w-16 rounded-2xl bg-accent mx-auto mb-4 flex items-center justify-center shadow-pop">
-            <span className="text-white text-2xl font-bold">B</span>
-          </div>
-          <h1 className="text-[28px] font-bold tracking-tight">Broker CRM</h1>
+          <img src="/broker-crm/icon-192.png" alt="Aster Realty" className="h-20 w-20 rounded-2xl mx-auto mb-4 shadow-pop" />
+          <h1 className="text-[28px] font-bold tracking-tight">Aster Realty</h1>
           <p className="text-muted text-sm mt-1">Every lead followed up. Every day.</p>
         </div>
 

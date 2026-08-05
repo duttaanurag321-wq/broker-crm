@@ -21,6 +21,7 @@ export const OPEN_STAGES = STAGES.filter((s) => !['won', 'lost'].includes(s.key)
 export const CALL_OUTCOMES = [
   { key: 'IN', label: 'Interested', color: '#34C759', answered: true },
   { key: 'NI', label: 'Not Interested', color: '#FF3B30', answered: true },
+  { key: 'CB', label: 'Call Back', color: '#30B0C7', answered: true },
   { key: 'NP', label: 'Not Picked', color: '#FF9500', answered: false },
   { key: 'NR', label: 'Not Reachable', color: '#8E8E93', answered: false },
   { key: 'OFF', label: 'Switched Off', color: '#6E6E73', answered: false }
@@ -39,7 +40,8 @@ export const LEAD_SOURCES = [
   'Other'
 ]
 
-export const PROPERTY_TYPES = ['Apartment', 'Villa/Independent House', 'Plot/Land', 'Commercial', 'Office Space']
+// 1 katha = 720 sq ft (local North Bengal convention)
+export const SQFT_PER_KATHA = 720
 
 // Simple gamification thresholds
 export const POINTS = {
