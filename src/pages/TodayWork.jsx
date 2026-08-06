@@ -6,6 +6,7 @@ import RingProgress from '../components/RingProgress.jsx'
 import LeadCard from '../components/LeadCard.jsx'
 import FollowUpSheet from '../components/FollowUpSheet.jsx'
 import { ListSkeleton } from '../components/Loader.jsx'
+import { useLeadsRealtime } from '../lib/useLeadsRealtime.js'
 import { IconFire } from '../components/Icons.jsx'
 import { todayStr, localDayBoundsUTC } from '../lib/helpers.js'
 
@@ -54,6 +55,10 @@ export default function TodayWork() {
   useEffect(() => {
     load()
   }, [load])
+
+  // A freshly-imported (or reassigned) lead should show up here without
+  // the agent having to pull-to-refresh.
+  useLeadsRealtime(user.id, load)
 
   useEffect(() => {
     if (leads.length === 0 && doneLeadIds.size > 0) {

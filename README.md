@@ -219,6 +219,42 @@ for the day and, if you did the same yesterday, your streak grows.
 
 ---
 
+## Automatic Facebook lead import (optional)
+
+If Facebook leads land in a Google Sheet, `google-apps-script/import-leads.gs` will pull every new
+row into the CRM automatically — no manual copy-paste, no duplicates, and leads get split evenly
+across your agents.
+
+**What it does:** checks the sheet every 5 minutes → skips rows already imported → skips any phone
+number already in the CRM → picks the next agent in rotation (round-robin, always reading current
+agents from `profiles`, so adding/removing an agent just changes the rotation automatically) →
+inserts the lead with `status = new`, no call logged yet, follow-up date = today (so it shows up on
+that agent's Today's Work right away) → marks the sheet row `Imported`. The assigned agent sees it
+appear live, without refreshing, because the app listens for it over Supabase Realtime.
+
+**One-time setup:**
+
+1. Supabase → **SQL Editor** → run `supabase/import_pack.sql` (adds a phone-dedup column, the
+   round-robin state table, and turns on Realtime for `leads` — doesn't touch anything existing).
+2. Open your Google Sheet → **Extensions → Apps Script** → paste in the contents of
+   `google-apps-script/import-leads.gs`.
+3. In the Apps Script editor: **Project Settings (gear icon) → Script Properties**, add:
+   - `SUPABASE_URL` — your project URL (Project Settings → API)
+   - `SUPABASE_SERVICE_ROLE_KEY` — the **service_role** key (same page). This key bypasses all
+     security rules by design so the script can write leads — keep it only in Script Properties,
+     never in the sheet itself or in the app's code.
+4. Check the column names in the script's `COLUMN_ALIASES` match your sheet's headers (Name and
+   Phone are required; Notes and Source are optional).
+5. Run the `importNewLeads` function once manually from the Apps Script editor (▶ button) to test —
+   check the Execution log for a summary, and check your CRM for the new lead.
+6. Run `setupTrigger` once — this is what makes it run automatically every 5 minutes from then on.
+   All free — no paid services involved.
+
+If a row is invalid (missing name/phone) or something fails, the script logs it in the sheet's
+"Imported" column instead of stopping the whole batch, so one bad row never blocks the rest.
+
+---
+
 ## Project structure
 
 ```
@@ -227,6 +263,9 @@ src/
   lib/           Supabase client, constants, helpers, auth context
   pages/         One file per screen
 supabase/
-  schema.sql     Run this once in Supabase SQL Editor
+  schema.sql        Run this once in Supabase SQL Editor
+  import_pack.sql   Optional — enables automatic Facebook-sheet lead import
+google-apps-script/
+  import-leads.gs   Optional — paste into Apps Script for automatic import
 .github/workflows/deploy.yml   Auto-builds and deploys on every push
 ```

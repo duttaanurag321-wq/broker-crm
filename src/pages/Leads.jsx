@@ -6,6 +6,7 @@ import TopBar from '../components/TopBar.jsx'
 import LeadCard from '../components/LeadCard.jsx'
 import Sheet from '../components/Sheet.jsx'
 import { ListSkeleton } from '../components/Loader.jsx'
+import { useLeadsRealtime } from '../lib/useLeadsRealtime.js'
 import { IconPlus, IconUpload, IconSearch, IconFilter } from '../components/Icons.jsx'
 import { STAGES, CALL_OUTCOMES, LEAD_SOURCES } from '../lib/constants.js'
 
@@ -34,6 +35,10 @@ export default function Leads() {
   useEffect(() => {
     load()
   }, [load])
+
+  // Imported leads (or any reassignment) should appear live, not just on
+  // next manual refresh.
+  useLeadsRealtime(user.id, load)
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length
 
