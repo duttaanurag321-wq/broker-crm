@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
+import { useAuth } from '../lib/AuthContext.jsx'
 import TopBar from '../components/TopBar.jsx'
 import { StagePill, OutcomePill } from '../components/Pills.jsx'
 import FollowUpSheet from '../components/FollowUpSheet.jsx'
@@ -17,10 +18,13 @@ import {
 
 export default function LeadDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
+  const { profile } = useAuth()
   const [lead, setLead] = useState(null)
   const [activities, setActivities] = useState([])
   const [sheetOpen, setSheetOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -36,6 +40,18 @@ export default function LeadDetail() {
   useEffect(() => {
     load()
   }, [load])
+
+  async function handleDelete() {
+    if (!confirm(`Delete ${lead.name} permanently? This also removes their call history. This can't be undone.`)) return
+    setDeleting(true)
+    const { error } = await supabase.from('leads').delete().eq('id', id)
+    setDeleting(false)
+    if (error) {
+      alert('Could not delete — ' + error.message)
+      return
+    }
+    navigate('/leads')
+  }
 
   if (loading || !lead) {
     return (
@@ -139,6 +155,16 @@ export default function LeadDetail() {
             ))}
           </div>
         </div>
+
+        {profile?.role === 'admin' && (
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="press w-full py-3 rounded-xl bg-danger/10 text-danger font-semibold text-sm disabled:opacity-50"
+          >
+            {deleting ? 'Deleting…' : 'Delete this lead'}
+          </button>
+        )}
       </div>
 
       <FollowUpSheet lead={lead} open={sheetOpen} onClose={() => setSheetOpen(false)} onSaved={load} />
