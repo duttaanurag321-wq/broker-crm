@@ -10,6 +10,7 @@ import Leads from './pages/Leads.jsx'
 import LeadDetail from './pages/LeadDetail.jsx'
 import LeadForm from './pages/LeadForm.jsx'
 import BulkUpload from './pages/BulkUpload.jsx'
+import LeadPool from './pages/LeadPool.jsx'
 import DailyReport from './pages/DailyReport.jsx'
 import SVReport from './pages/SVReport.jsx'
 import Settings from './pages/Settings.jsx'
@@ -49,6 +50,7 @@ export default function App() {
                   <Route path="/leads" element={<Leads />} />
                   <Route path="/leads/new" element={<LeadForm />} />
                   <Route path="/leads/upload" element={<BulkUpload />} />
+                  <Route path="/leads/pool" element={<LeadPool />} />
                   <Route path="/leads/:id" element={<LeadDetail />} />
                   <Route path="/leads/:id/edit" element={<LeadForm />} />
                   <Route path="/reports/daily" element={<DailyReport />} />

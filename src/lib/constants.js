@@ -40,6 +40,14 @@ export const LEAD_SOURCES = [
   'Other'
 ]
 
+// How a lead entered the CRM — used by the Lead Pool filters and reports.
+export const LEAD_ORIGINS = [
+  { key: 'app', label: 'Manually Added' },
+  { key: 'facebook', label: 'Facebook Leads' },
+  { key: 'csv_import', label: 'Imported Leads' }
+]
+export const LEAD_ORIGIN_MAP = Object.fromEntries(LEAD_ORIGINS.map((o) => [o.key, o]))
+
 // 1 katha = 720 sq ft (local North Bengal convention)
 export const SQFT_PER_KATHA = 720
 

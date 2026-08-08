@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { supabase } from '../lib/supabase.js'
 import TopBar from '../components/TopBar.jsx'
-import { IconFire } from '../components/Icons.jsx'
+import { IconFire, IconInbox } from '../components/Icons.jsx'
 
 export default function Settings() {
   const { user, profile, signOut } = useAuth()
   const [totals, setTotals] = useState(null)
+  const [agents, setAgents] = useState(null)
+  const isAdmin = profile?.role === 'admin'
 
   useEffect(() => {
     if (!user) return
@@ -22,6 +25,27 @@ export default function Settings() {
       .eq('status', 'won')
       .then(({ count }) => setTotals((t) => ({ ...t, won: count || 0 })))
   }, [user])
+
+  useEffect(() => {
+    if (!isAdmin) return
+    supabase
+      .from('profiles')
+      .select('id,full_name,email,receiving_leads')
+      .eq('role', 'agent')
+      .order('full_name')
+      .then(({ data }) => setAgents(data || []))
+  }, [isAdmin])
+
+  async function toggleReceiving(agent) {
+    const next = !agent.receiving_leads
+    setAgents((list) => list.map((a) => (a.id === agent.id ? { ...a, receiving_leads: next } : a)))
+    const { error } = await supabase.from('profiles').update({ receiving_leads: next }).eq('id', agent.id)
+    if (error) {
+      // Revert on failure — keeps the toggle honest instead of showing a
+      // state that didn't actually save.
+      setAgents((list) => list.map((a) => (a.id === agent.id ? { ...a, receiving_leads: !next } : a)))
+    }
+  }
 
   return (
     <div>
@@ -55,6 +79,54 @@ export default function Settings() {
           <SettingsRow label="Full name" value={profile?.full_name || '—'} />
           <SettingsRow label="Role" value={profile?.role === 'admin' ? 'Admin' : 'Agent'} />
         </div>
+
+        {isAdmin && (
+          <>
+            <Link
+              to="/leads/pool"
+              className="press flex items-center justify-between bg-white rounded-2xl border border-line/60 shadow-card p-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-accent/10 text-accent flex items-center justify-center">
+                  <IconInbox size={18} />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">Lead Pool</p>
+                  <p className="text-xs text-muted">Unassigned leads waiting to be distributed</p>
+                </div>
+              </div>
+              <span className="text-muted">→</span>
+            </Link>
+
+            <div className="bg-white rounded-2xl border border-line/60 shadow-card p-4">
+              <p className="text-sm font-semibold mb-1">Team — Receiving Leads</p>
+              <p className="text-xs text-muted mb-3">
+                Turn an agent off to skip them in Round Robin without removing them — useful if they're on leave.
+              </p>
+              <div className="divide-y divide-line">
+                {agents === null && <p className="text-sm text-muted py-2">Loading team…</p>}
+                {agents?.length === 0 && <p className="text-sm text-muted py-2">No agents yet.</p>}
+                {agents?.map((a) => (
+                  <div key={a.id} className="flex items-center justify-between py-3">
+                    <span className="text-sm font-medium truncate">{a.full_name || a.email}</span>
+                    <button
+                      onClick={() => toggleReceiving(a)}
+                      className={`press relative h-6 w-11 rounded-full transition-colors flex-shrink-0 ${
+                        a.receiving_leads ? 'bg-success' : 'bg-line'
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                          a.receiving_leads ? 'translate-x-5' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="bg-white rounded-2xl border border-line/60 shadow-card p-4">
           <p className="text-sm font-semibold mb-1">Adding teammates</p>

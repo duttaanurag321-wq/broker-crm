@@ -100,6 +100,13 @@ export const IconSearch = (p) => (
   </svg>
 )
 
+export const IconInbox = (p) => (
+  <svg viewBox="0 0 24 24" width={p.size || 20} height={p.size || 20} {...base} {...p}>
+    <path d="M3 12h4.5l1.5 3h6l1.5-3H21" />
+    <path d="M5.5 6h13a2 2 0 0 1 2 1.8L21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6l0.5-4.2A2 2 0 0 1 5.5 6z" />
+  </svg>
+)
+
 export const IconFilter = (p) => (
   <svg viewBox="0 0 24 24" width={p.size || 20} height={p.size || 20} {...base} {...p}>
     <path d="M4 6h16M7 12h10M10.5 18h3" />

@@ -255,6 +255,35 @@ If a row is invalid (missing name/phone) or something fails, the script logs it 
 
 ---
 
+## Lead Pool — one shared inbox before leads reach an agent
+
+Every new lead (Facebook, CSV import, or your existing manual sheet) now lands **unassigned** in a
+new **Lead Pool** screen (Leads tab → inbox icon, admins only) instead of landing straight in
+someone's list. From there you select leads and either:
+
+- **Assign Selected → pick an agent** — a specific person gets exactly those leads, or
+- **Round Robin** — splits the selection evenly across every agent whose **Receiving Leads** is ON
+  (Settings → Team, admin only) — turn an agent off there to skip them temporarily without deleting
+  them.
+
+Nothing is assigned automatically anymore — not even Facebook leads. This is a deliberate change
+from the first import setup: it gives you one deliberate step (a few taps) instead of hoping the
+auto-assignment picked the right person.
+
+**Importing your manual Google Sheet:** use the existing **Leads → upload icon** page — it now has a
+choice of *"Myself"* or *"Leave unassigned (Lead Pool)"*, plus a **Preview** step showing exactly
+what will be imported and what's being skipped as a duplicate, before anything is written.
+
+**Setup (only if you haven't already run `import_pack.sql` from the first import feature):**
+
+1. Supabase → SQL Editor → run `supabase/import_pack.sql` first (if not done already), then run
+   `supabase/lead_pool_pack.sql`.
+2. Replace `google-apps-script/import-leads.gs` in your Apps Script project with the new version —
+   it now leaves every Facebook lead unassigned in the Lead Pool instead of round-robining it itself.
+3. That's it — no new Script Properties needed, same `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`.
+
+---
+
 ## Project structure
 
 ```
@@ -263,8 +292,9 @@ src/
   lib/           Supabase client, constants, helpers, auth context
   pages/         One file per screen
 supabase/
-  schema.sql        Run this once in Supabase SQL Editor
-  import_pack.sql   Optional — enables automatic Facebook-sheet lead import
+  schema.sql          Run this once in Supabase SQL Editor
+  import_pack.sql     Optional — enables automatic Facebook-sheet lead import
+  lead_pool_pack.sql  Optional — Lead Pool, agent Receiving Leads toggle
 google-apps-script/
   import-leads.gs   Optional — paste into Apps Script for automatic import
 .github/workflows/deploy.yml   Auto-builds and deploys on every push

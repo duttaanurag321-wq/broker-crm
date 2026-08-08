@@ -2,9 +2,12 @@
  * Broker CRM — Automatic Lead Importer
  * ------------------------------------
  * Watches a Google Sheet (where Facebook leads land) and pushes every new
- * row into the Supabase `leads` table: dedups by phone, round-robins the
- * assignment across active agents, and marks the row as imported so it's
- * never processed twice.
+ * row into the Supabase `leads` table as an UNASSIGNED lead in the app's
+ * Lead Pool — dedups by phone, and marks the row as imported so it's
+ * never processed twice. Assigning leads to agents (specific agent or
+ * round robin) now happens from the Lead Pool screen in the app itself,
+ * not from this script — that way it always uses your current agent
+ * list and each agent's "Receiving Leads" toggle.
  *
  * SETUP (one-time)
  * 1. Open your Google Sheet → Extensions → Apps Script.
@@ -33,7 +36,6 @@ const SHEET_NAME = 'Sheet1' // change if your leads land on a different tab
 // first time the script runs.
 const COL_IMPORTED = 'Imported'
 const COL_IMPORTED_AT = 'Imported At'
-const COL_ASSIGNED = 'Assigned Agent'
 
 // Left side = what the script looks for in your header row (case
 // insensitive, first match wins). Add alternates if your sheet uses
@@ -116,17 +118,12 @@ function importNewLeads() {
         continue
       }
 
-      const agentId = fetchNextAgent(SUPABASE_URL, SERVICE_KEY)
-      if (!agentId) {
-        sheet.getRange(sheetRow, colIndex.imported + 1).setValue('ERROR — no active agents found')
-        failed++
-        continue
-      }
-
       const notes = notesCol !== -1 ? String(row[notesCol] || '').trim() : ''
       const source = sourceCol !== -1 && row[sourceCol] ? String(row[sourceCol]).trim() : DEFAULT_SOURCE
       const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Kolkata', 'yyyy-MM-dd')
 
+      // Left unassigned on purpose — it lands in the Lead Pool, and an
+      // admin assigns it (specific agent or Round Robin) from there.
       const payload = {
         name,
         phone: rawPhone,
@@ -135,8 +132,9 @@ function importNewLeads() {
         status: 'new',
         call_status: null, // no calls made yet — CRM shows this as "No calls yet", i.e. pending
         next_action: 'Call new lead',
-        next_followup_date: today, // so it shows up in the agent's Today's Work immediately
-        assigned_to: agentId,
+        next_followup_date: today,
+        origin: 'facebook',
+        assigned_to: null,
         created_by: adminId
       }
 
@@ -144,7 +142,6 @@ function importNewLeads() {
 
       sheet.getRange(sheetRow, colIndex.imported + 1).setValue('TRUE')
       sheet.getRange(sheetRow, colIndex.importedAt + 1).setValue(new Date())
-      sheet.getRange(sheetRow, colIndex.assigned + 1).setValue(agentId)
       imported++
     } catch (err) {
       // Never let one bad row stop the rest of the batch.
@@ -176,12 +173,7 @@ function ensureBookkeepingColumns(sheet) {
 
   const imported = ensure(COL_IMPORTED)
   const importedAt = ensure(COL_IMPORTED_AT)
-  const assigned = ensure(COL_ASSIGNED)
-
-  // Re-read in case columns were appended
-  headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
-
-  return { headerRow, colIndex: { imported, importedAt, assigned } }
+  return { headerRow, colIndex: { imported, importedAt } }
 }
 
 function findColumn(headerRow, aliases) {
@@ -215,18 +207,6 @@ function leadExists(url, key, phoneDigits) {
   return Array.isArray(data) && data.length > 0
 }
 
-function fetchNextAgent(url, key) {
-  const resp = UrlFetchApp.fetch(`${url}/rest/v1/rpc/get_next_import_agent`, {
-    method: 'post',
-    headers: supabaseHeaders(key),
-    payload: JSON.stringify({}),
-    muteHttpExceptions: true
-  })
-  if (resp.getResponseCode() >= 300) throw new Error('get_next_import_agent failed: ' + resp.getContentText())
-  const data = JSON.parse(resp.getContentText())
-  return data || null
-}
-
 function fetchAdminId(url, key) {
   const resp = UrlFetchApp.fetch(`${url}/rest/v1/profiles?select=id&role=eq.admin&order=created_at.asc&limit=1`, {
     method: 'get',
@@ -242,10 +222,6 @@ function fetchAdminId(url, key) {
 }
 
 function insertLead(url, key, payload) {
-  // Fall back to the assigned agent as created_by if no admin profile
-  // exists yet — created_by just needs to be a valid profiles.id.
-  if (!payload.created_by) payload.created_by = payload.assigned_to
-
   const resp = UrlFetchApp.fetch(`${url}/rest/v1/leads`, {
     method: 'post',
     headers: supabaseHeaders(key, { Prefer: 'return=minimal' }),

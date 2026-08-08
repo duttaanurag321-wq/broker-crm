@@ -9,14 +9,21 @@ import { todayStr, formatDateHuman, localDayBoundsUTC } from '../lib/helpers.js'
 import { IconReports } from '../components/Icons.jsx'
 
 export default function DailyReport() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [date, setDate] = useState(todayStr())
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const isAdmin = profile?.role === 'admin'
 
   const load = useCallback(async () => {
     setLoading(true)
     const { startISO, endISO } = localDayBoundsUTC(date)
+
+    let newLeadsQuery = supabase.from('leads').select('id,origin,assigned_to').gte('created_at', startISO).lte('created_at', endISO)
+    // Agents only ever see their own book (RLS enforces this anyway) —
+    // admins see the whole day's intake across everyone, which is what
+    // makes the Facebook/Manual/Assigned/Unassigned breakdown meaningful.
+    if (!isAdmin) newLeadsQuery = newLeadsQuery.eq('assigned_to', user.id)
 
     const [{ data: acts }, { data: newLeads }] = await Promise.all([
       supabase
@@ -26,7 +33,7 @@ export default function DailyReport() {
         .gte('created_at', startISO)
         .lte('created_at', endISO)
         .order('created_at', { ascending: true }),
-      supabase.from('leads').select('id').eq('assigned_to', user.id).gte('created_at', startISO).lte('created_at', endISO)
+      newLeadsQuery
     ])
 
     const calls = (acts || []).filter((a) => a.type === 'call')
@@ -68,6 +75,13 @@ export default function DailyReport() {
       totalLeadsContacted: latestPerLead.size,
       answered,
       totalLeads: (newLeads || []).length,
+      leadOrigin: {
+        facebook: (newLeads || []).filter((l) => l.origin === 'facebook').length,
+        app: (newLeads || []).filter((l) => l.origin === 'app').length,
+        csv_import: (newLeads || []).filter((l) => l.origin === 'csv_import').length,
+        assigned: (newLeads || []).filter((l) => l.assigned_to).length,
+        unassigned: (newLeads || []).filter((l) => !l.assigned_to).length
+      },
       outcomeCounts,
       svScheduled: stageMoves('sv_scheduled'),
       svDone: stageMoves('sv_done'),
@@ -113,6 +127,18 @@ export default function DailyReport() {
             <Stat label="New leads received" value={stats.totalLeads} color="#5E5CE6" />
             <Stat label="Won today" value={stats.won} color="#34C759" />
           </div>
+
+          {isAdmin && stats.totalLeads > 0 && (
+            <Section title="New leads breakdown">
+              <div className="bg-white rounded-2xl border border-line/60 shadow-card divide-y divide-line">
+                <MoveRow label="Facebook Leads" value={stats.leadOrigin.facebook} />
+                <MoveRow label="Manual Leads" value={stats.leadOrigin.app} />
+                <MoveRow label="Imported Leads" value={stats.leadOrigin.csv_import} />
+                <MoveRow label="Assigned" value={stats.leadOrigin.assigned} />
+                <MoveRow label="Unassigned (in Lead Pool)" value={stats.leadOrigin.unassigned} />
+              </div>
+            </Section>
+          )}
 
           <Section title="Leads by outcome">
             <div className="grid grid-cols-3 gap-2">

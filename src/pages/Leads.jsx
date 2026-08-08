@@ -7,13 +7,13 @@ import LeadCard from '../components/LeadCard.jsx'
 import Sheet from '../components/Sheet.jsx'
 import { ListSkeleton } from '../components/Loader.jsx'
 import { useLeadsRealtime } from '../lib/useLeadsRealtime.js'
-import { IconPlus, IconUpload, IconSearch, IconFilter } from '../components/Icons.jsx'
+import { IconPlus, IconUpload, IconSearch, IconFilter, IconInbox } from '../components/Icons.jsx'
 import { STAGES, CALL_OUTCOMES, LEAD_SOURCES } from '../lib/constants.js'
 
 const EMPTY_FILTERS = { stage: '', outcome: '', source: '' }
 
 export default function Leads() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [leads, setLeads] = useState([])
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
@@ -85,6 +85,11 @@ export default function Leads() {
         subtitle={`${filtered.length} of ${leads.length}`}
         right={
           <div className="flex gap-2">
+            {profile?.role === 'admin' && (
+              <Link to="/leads/pool" className="press h-10 w-10 rounded-full bg-white border border-line flex items-center justify-center text-ink shadow-card">
+                <IconInbox size={18} />
+              </Link>
+            )}
             <Link to="/leads/upload" className="press h-10 w-10 rounded-full bg-white border border-line flex items-center justify-center text-ink shadow-card">
               <IconUpload size={18} />
             </Link>

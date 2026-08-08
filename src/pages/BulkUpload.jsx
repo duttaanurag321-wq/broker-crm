@@ -24,6 +24,9 @@ export default function BulkUpload() {
   const [sheetUrl, setSheetUrl] = useState('')
   const [error, setError] = useState('')
   const [importing, setImporting] = useState(false)
+  const [previewing, setPreviewing] = useState(false)
+  const [preview, setPreview] = useState(null) // { toInsert, duplicateCount, invalidCount }
+  const [assignMode, setAssignMode] = useState('self') // 'self' | 'unassigned'
   const [result, setResult] = useState(null)
 
   function handleParsed(data) {
@@ -47,6 +50,7 @@ export default function BulkUpload() {
     })
     setError('')
     setResult(null)
+    setPreview(null)
   }
 
   function handleFile(e) {
@@ -80,15 +84,15 @@ export default function BulkUpload() {
     }
   }
 
-  async function handleImport() {
+  async function runPreview() {
     if (!mapping?.name || !mapping?.phone) {
       setError('Map at least Name and Phone before importing.')
       return
     }
-    setImporting(true)
+    setPreviewing(true)
     setError('')
     const today = todayStr()
-    const payload = rows
+    const mapped = rows
       .map((r) => ({
         name: (r[mapping.name] || '').trim(),
         phone: normalizeIndianPhone(r[mapping.phone] || ''),
@@ -102,24 +106,60 @@ export default function BulkUpload() {
         status: 'new',
         next_action: 'Make first call',
         next_followup_date: today,
+        origin: 'csv_import',
         created_by: user.id,
-        assigned_to: user.id
+        assigned_to: assignMode === 'self' ? user.id : null
       }))
       .filter((r) => r.name && r.phone)
 
-    if (payload.length === 0) {
-      setError('No valid rows to import — check your column mapping.')
-      setImporting(false)
-      return
+    const invalidCount = rows.length - mapped.length
+
+    // Never create a duplicate lead, even on a repeat import — check
+    // every mapped phone number (last 10 digits, matching how phone_digits
+    // is stored) against what's already in the CRM before inserting.
+    const digitsOf = (p) => p.replace(/\D/g, '').slice(-10)
+    const digitsList = Array.from(new Set(mapped.map((r) => digitsOf(r.phone)).filter((d) => d.length === 10)))
+    let existing = new Set()
+    for (let i = 0; i < digitsList.length; i += 200) {
+      const chunk = digitsList.slice(i, i + 200)
+      const { data, error: qErr } = await supabase.from('leads').select('phone_digits').in('phone_digits', chunk)
+      if (qErr) {
+        setError(qErr.message)
+        setPreviewing(false)
+        return
+      }
+      ;(data || []).forEach((d) => existing.add(d.phone_digits))
     }
 
-    const { error, count } = await supabase.from('leads').insert(payload, { count: 'exact' })
+    const seenInBatch = new Set()
+    const toInsert = []
+    let duplicateCount = 0
+    mapped.forEach((r) => {
+      const d = digitsOf(r.phone)
+      if (existing.has(d) || seenInBatch.has(d)) {
+        duplicateCount++
+        return
+      }
+      seenInBatch.add(d)
+      toInsert.push(r)
+    })
+
+    setPreview({ toInsert, duplicateCount, invalidCount })
+    setPreviewing(false)
+  }
+
+  async function confirmImport() {
+    if (!preview?.toInsert?.length) return
+    setImporting(true)
+    setError('')
+    const { error, count } = await supabase.from('leads').insert(preview.toInsert, { count: 'exact' })
     setImporting(false)
     if (error) {
       setError(error.message)
       return
     }
-    setResult({ imported: count ?? payload.length, skipped: rows.length - payload.length })
+    setResult({ imported: count ?? preview.toInsert.length, skipped: preview.duplicateCount + preview.invalidCount })
+    setPreview(null)
   }
 
   return (
@@ -191,13 +231,79 @@ export default function BulkUpload() {
               </div>
             ))}
 
-            <button
-              onClick={handleImport}
-              disabled={importing}
-              className="press w-full py-3 rounded-xl bg-accent text-white font-semibold disabled:opacity-50 mt-2"
-            >
-              {importing ? 'Importing…' : `Import ${rows.length} leads`}
-            </button>
+            <div className="pt-1">
+              <p className="text-sm font-medium mb-2">Assign these leads to</p>
+              <div className="flex gap-2">
+                <label
+                  className={`flex-1 press text-center py-2.5 rounded-xl border text-sm font-medium cursor-pointer ${
+                    assignMode === 'self' ? 'bg-ink text-white border-ink' : 'bg-base border-line'
+                  }`}
+                >
+                  <input type="radio" className="hidden" checked={assignMode === 'self'} onChange={() => setAssignMode('self')} />
+                  Myself
+                </label>
+                <label
+                  className={`flex-1 press text-center py-2.5 rounded-xl border text-sm font-medium cursor-pointer ${
+                    assignMode === 'unassigned' ? 'bg-ink text-white border-ink' : 'bg-base border-line'
+                  }`}
+                >
+                  <input type="radio" className="hidden" checked={assignMode === 'unassigned'} onChange={() => setAssignMode('unassigned')} />
+                  Leave unassigned (Lead Pool)
+                </label>
+              </div>
+            </div>
+
+            {!preview && (
+              <button
+                onClick={runPreview}
+                disabled={previewing}
+                className="press w-full py-3 rounded-xl bg-ink text-white font-semibold disabled:opacity-50 mt-2"
+              >
+                {previewing ? 'Checking for duplicates…' : 'Preview import'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {preview && (
+          <div className="bg-white rounded-2xl border border-line/60 shadow-card p-4 space-y-3">
+            <p className="text-sm font-semibold">Preview</p>
+            <div className="flex gap-2 text-xs font-medium">
+              <span className="px-2.5 py-1 rounded-full bg-success/10 text-success">{preview.toInsert.length} to import</span>
+              {preview.duplicateCount > 0 && (
+                <span className="px-2.5 py-1 rounded-full bg-warning/10 text-warning">{preview.duplicateCount} duplicate, skipped</span>
+              )}
+              {preview.invalidCount > 0 && (
+                <span className="px-2.5 py-1 rounded-full bg-danger/10 text-danger">{preview.invalidCount} invalid, skipped</span>
+              )}
+            </div>
+            <div className="max-h-64 overflow-y-auto divide-y divide-line border border-line rounded-xl">
+              {preview.toInsert.slice(0, 50).map((r, i) => (
+                <div key={i} className="px-3 py-2 flex items-center justify-between text-sm">
+                  <span className="font-medium truncate">{r.name}</span>
+                  <span className="text-muted text-xs">{r.phone}</span>
+                </div>
+              ))}
+              {preview.toInsert.length > 50 && (
+                <p className="px-3 py-2 text-xs text-muted">…and {preview.toInsert.length - 50} more</p>
+              )}
+              {preview.toInsert.length === 0 && <p className="px-3 py-4 text-sm text-muted text-center">Nothing new to import.</p>}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPreview(null)}
+                className="press flex-1 py-3 rounded-xl bg-base border border-line font-semibold text-sm"
+              >
+                Back
+              </button>
+              <button
+                onClick={confirmImport}
+                disabled={importing || preview.toInsert.length === 0}
+                className="press flex-1 py-3 rounded-xl bg-accent text-white font-semibold text-sm disabled:opacity-50"
+              >
+                {importing ? 'Importing…' : `Import ${preview.toInsert.length} leads`}
+              </button>
+            </div>
           </div>
         )}
 
