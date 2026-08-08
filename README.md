@@ -284,6 +284,28 @@ what will be imported and what's being skipped as a duplicate, before anything i
 
 ---
 
+## Home dashboard — Apple Fitness–style Site Visit tracker
+
+The Home screen (the "Today" tab you land on) now opens with a monthly Site Visit progress ring, a
+"Today's Site Visits" breakdown, and a few key metrics — before your existing follow-up list, which
+is still there exactly as before, just now below this new section.
+
+**Nothing new to maintain:** a completed Site Visit is still just a lead whose pipeline stage is
+**SV Done** — same as before, set from the same Log Call sheet, no new button anywhere. The ring
+counts each lead once, and if a lead's stage is ever changed back off SV Done, it drops back out of
+the count automatically.
+
+**The monthly target** (default 12) is admin-editable in **Settings → Monthly Site Visit target** —
+change the number, hit Save, and every agent's ring reflects it immediately.
+
+**Setup:**
+
+1. Supabase → SQL Editor → run `supabase/sv_target_pack.sql` (adds one small settings table for the
+   target — nothing about leads or activities changes).
+2. Upload the changed files as usual and redeploy.
+
+---
+
 ## Project structure
 
 ```
@@ -295,6 +317,8 @@ supabase/
   schema.sql          Run this once in Supabase SQL Editor
   import_pack.sql     Optional — enables automatic Facebook-sheet lead import
   lead_pool_pack.sql  Optional — Lead Pool, agent Receiving Leads toggle
+  lead_purpose_pack.sql  Optional — adds lead purpose field
+  sv_target_pack.sql  Optional — configurable monthly Site Visit target
 google-apps-script/
   import-leads.gs   Optional — paste into Apps Script for automatic import
 .github/workflows/deploy.yml   Auto-builds and deploys on every push

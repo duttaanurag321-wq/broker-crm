@@ -9,6 +9,7 @@ import { ListSkeleton } from '../components/Loader.jsx'
 import { useLeadsRealtime } from '../lib/useLeadsRealtime.js'
 import { IconFire } from '../components/Icons.jsx'
 import { todayStr, localDayBoundsUTC } from '../lib/helpers.js'
+import HomeDashboard from '../components/HomeDashboard.jsx'
 
 export default function TodayWork() {
   const { user, profile } = useAuth()
@@ -95,6 +96,8 @@ export default function TodayWork() {
         subtitle={new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
       />
 
+      <HomeDashboard />
+
       <div className="px-4 mt-2">
         <div className="bg-white rounded-2xl shadow-card border border-line/60 p-5 flex items-center gap-5">
           <RingProgress done={doneToday} total={Math.max(total, doneToday)} />
@@ -123,6 +126,7 @@ export default function TodayWork() {
       </div>
 
       <div className="px-4 mt-5 space-y-3">
+        <p className="text-sm font-semibold text-muted px-0.5">Follow-ups due today</p>
         {loading && <ListSkeleton rows={4} />}
         {!loading && pendingLeads.length === 0 && (
           <div className="text-center py-16">

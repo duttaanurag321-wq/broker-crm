@@ -9,6 +9,9 @@ export default function Settings() {
   const { user, profile, signOut } = useAuth()
   const [totals, setTotals] = useState(null)
   const [agents, setAgents] = useState(null)
+  const [svTarget, setSvTarget] = useState(null)
+  const [svTargetInput, setSvTargetInput] = useState('')
+  const [savingTarget, setSavingTarget] = useState(false)
   const isAdmin = profile?.role === 'admin'
 
   useEffect(() => {
@@ -34,7 +37,25 @@ export default function Settings() {
       .eq('role', 'agent')
       .order('full_name')
       .then(({ data }) => setAgents(data || []))
+    supabase
+      .from('app_settings')
+      .select('sv_monthly_target')
+      .eq('id', 1)
+      .maybeSingle()
+      .then(({ data }) => {
+        setSvTarget(data?.sv_monthly_target ?? 12)
+        setSvTargetInput(String(data?.sv_monthly_target ?? 12))
+      })
   }, [isAdmin])
+
+  async function saveSvTarget() {
+    const n = parseInt(svTargetInput, 10)
+    if (!Number.isFinite(n) || n <= 0) return
+    setSavingTarget(true)
+    const { error } = await supabase.from('app_settings').update({ sv_monthly_target: n, updated_at: new Date().toISOString() }).eq('id', 1)
+    setSavingTarget(false)
+    if (!error) setSvTarget(n)
+  }
 
   async function toggleReceiving(agent) {
     const next = !agent.receiving_leads
@@ -97,6 +118,32 @@ export default function Settings() {
               </div>
               <span className="text-muted">→</span>
             </Link>
+
+            <div className="bg-white rounded-2xl border border-line/60 shadow-card p-4">
+              <p className="text-sm font-semibold mb-1">Monthly Site Visit target</p>
+              <p className="text-xs text-muted mb-3">
+                Used for the Site Visit progress ring on the Home screen. Applies team-wide.
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  value={svTargetInput}
+                  onChange={(e) => setSvTargetInput(e.target.value)}
+                  className="w-24 rounded-xl border border-line px-3 py-2 text-sm bg-base"
+                />
+                <button
+                  onClick={saveSvTarget}
+                  disabled={savingTarget || String(svTarget) === svTargetInput}
+                  className="press px-4 py-2 rounded-xl bg-accent text-white text-sm font-semibold disabled:opacity-50"
+                >
+                  {savingTarget ? 'Saving…' : 'Save'}
+                </button>
+                {svTarget !== null && String(svTarget) === svTargetInput && (
+                  <span className="text-xs text-success font-medium">Current: {svTarget}/month</span>
+                )}
+              </div>
+            </div>
 
             <div className="bg-white rounded-2xl border border-line/60 shadow-card p-4">
               <p className="text-sm font-semibold mb-1">Team — Receiving Leads</p>

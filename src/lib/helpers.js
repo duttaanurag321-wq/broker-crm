@@ -109,3 +109,14 @@ export function localDayBoundsUTC(dateStr) {
   const end = new Date(`${dateStr}T23:59:59.999`)
   return { startISO: start.toISOString(), endISO: end.toISOString() }
 }
+
+// Same local-timezone-safe idea as localDayBoundsUTC, but for the whole
+// calendar month a given date falls in — used by the monthly Site Visit
+// progress ring so "this month" always means the agent's own calendar
+// month, not a UTC-shifted one.
+export function localMonthBoundsUTC(date = new Date()) {
+  const d = typeof date === 'string' ? new Date(date) : date
+  const start = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0)
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999)
+  return { startISO: start.toISOString(), endISO: end.toISOString(), label: start.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) }
+}
