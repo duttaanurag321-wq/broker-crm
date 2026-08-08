@@ -14,23 +14,27 @@ const EMPTY_FILTERS = { stage: '', outcome: '', source: '' }
 
 export default function Leads() {
   const { user, profile } = useAuth()
+  const isAdmin = profile?.role === 'admin'
   const [leads, setLeads] = useState([])
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState(EMPTY_FILTERS)
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS)
   const [filterOpen, setFilterOpen] = useState(false)
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState(new Set())
 
   const load = useCallback(async () => {
     setLoading(true)
-    // Fetch everything for this agent once — filtering (including
-    // Won/Lost) happens client-side so switching a stage filter doesn't
-    // need a round trip, and "won"/"lost" become reachable through the
-    // stage filter even though they're hidden by default.
-    const { data } = await supabase.from('leads').select('*').eq('assigned_to', user.id).order('created_at', { ascending: false })
+    // Admins manage the whole team's book here (needed to bulk-delete or
+    // review across agents); everyone else still only ever sees their own
+    // assigned leads, exactly as before.
+    let q = supabase.from('leads').select('*').order('created_at', { ascending: false })
+    if (!isAdmin) q = q.eq('assigned_to', user.id)
+    const { data } = await q
     setLeads(data || [])
     setLoading(false)
-  }, [user.id])
+  }, [user.id, isAdmin])
 
   useEffect(() => {
     load()
@@ -78,6 +82,38 @@ export default function Leads() {
     setFilterOpen(false)
   }
 
+  function toggleSelectMode() {
+    setSelectMode((v) => !v)
+    setSelected(new Set())
+  }
+
+  function toggleOne(id) {
+    setSelected((s) => {
+      const next = new Set(s)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((l) => selected.has(l.id))
+  function toggleAll() {
+    setSelected(allFilteredSelected ? new Set() : new Set(filtered.map((l) => l.id)))
+  }
+
+  async function deleteSelected() {
+    const ids = Array.from(selected)
+    if (ids.length === 0) return
+    if (!confirm(`Delete ${ids.length} lead${ids.length === 1 ? '' : 's'} permanently? This can't be undone.`)) return
+    const { error } = await supabase.from('leads').delete().in('id', ids)
+    if (!error) {
+      setSelected(new Set())
+      load()
+    } else {
+      alert('Could not delete — ' + error.message)
+    }
+  }
+
   return (
     <div>
       <TopBar
@@ -85,7 +121,17 @@ export default function Leads() {
         subtitle={`${filtered.length} of ${leads.length}`}
         right={
           <div className="flex gap-2">
-            {profile?.role === 'admin' && (
+            {isAdmin && (
+              <button
+                onClick={toggleSelectMode}
+                className={`press h-10 px-3.5 rounded-full border flex items-center justify-center text-xs font-semibold ${
+                  selectMode ? 'bg-ink text-white border-ink' : 'bg-white border-line text-ink shadow-card'
+                }`}
+              >
+                {selectMode ? 'Cancel' : 'Select'}
+              </button>
+            )}
+            {isAdmin && (
               <Link to="/leads/pool" className="press h-10 w-10 rounded-full bg-white border border-line flex items-center justify-center text-ink shadow-card">
                 <IconInbox size={18} />
               </Link>
@@ -136,6 +182,23 @@ export default function Leads() {
         </div>
       )}
 
+      {selectMode && filtered.length > 0 && (
+        <div className="px-4 mb-3 flex items-center gap-2">
+          <label className="flex items-center gap-2 text-xs font-medium text-muted">
+            <input type="checkbox" checked={allFilteredSelected} onChange={toggleAll} className="h-4 w-4 rounded" />
+            Select all ({filtered.length})
+          </label>
+          {selected.size > 0 && (
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-xs font-semibold text-accent">{selected.size} selected</span>
+              <button onClick={deleteSelected} className="press px-3 py-1.5 rounded-full bg-danger/10 text-danger text-xs font-semibold">
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="px-4 space-y-3 pb-4">
         {loading && <ListSkeleton rows={5} />}
         {!loading && filtered.length === 0 && (
@@ -148,7 +211,13 @@ export default function Leads() {
           </div>
         )}
         {filtered.map((lead) => (
-          <LeadCard key={lead.id} lead={lead} />
+          <LeadCard
+            key={lead.id}
+            lead={lead}
+            selectable={selectMode}
+            selected={selected.has(lead.id)}
+            onToggleSelect={toggleOne}
+          />
         ))}
         {!loading && leads.length > 0 && !filters.stage && (
           <p className="text-center text-[11px] text-muted pt-2 pb-4">Won and Lost leads are kept out of this list — filter by stage to see them.</p>

@@ -175,7 +175,7 @@ export default function LeadPool() {
           type="date"
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
-          className="ml-auto rounded-full border border-line bg-white px-2.5 py-1 text-xs"
+          className="ml-auto flex-shrink-0 w-[135px] rounded-full border border-line bg-white px-2.5 py-1 text-xs"
         />
         {dateFilter && (
           <button onClick={() => setDateFilter('')} className="press text-xs font-semibold text-accent">

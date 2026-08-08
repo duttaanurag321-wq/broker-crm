@@ -3,15 +3,25 @@ import { StagePill, OutcomePill } from './Pills.jsx'
 import { IconWhatsapp, IconCall, IconCalendar } from './Icons.jsx'
 import { displayPhone, whatsappLink, telLink, formatDateHuman, formatTime, formatINRCompact } from '../lib/helpers.js'
 
-export default function LeadCard({ lead, onLogClick, showFollowUp = true }) {
+export default function LeadCard({ lead, onLogClick, showFollowUp = true, selectable = false, selected = false, onToggleSelect }) {
   const navigate = useNavigate()
   const overdue = lead.next_followup_date && lead.next_followup_date < new Date().toISOString().slice(0, 10)
 
   return (
     <div
-      className="bg-white rounded-2xl shadow-card border border-line/60 p-4 press cursor-pointer"
-      onClick={() => navigate(`/leads/${lead.id}`)}
+      className="bg-white rounded-2xl shadow-card border border-line/60 p-4 press cursor-pointer flex gap-3"
+      onClick={() => (selectable ? onToggleSelect?.(lead.id) : navigate(`/leads/${lead.id}`))}
     >
+      {selectable && (
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onToggleSelect?.(lead.id)}
+          onClick={(e) => e.stopPropagation()}
+          className="h-4 w-4 rounded mt-1 flex-shrink-0"
+        />
+      )}
+      <div className="flex-1 min-w-0">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-semibold text-[15px] truncate">{lead.name}</p>
@@ -72,6 +82,7 @@ export default function LeadCard({ lead, onLogClick, showFollowUp = true }) {
           Log call & follow-up
         </button>
       )}
+      </div>
     </div>
   )
 }
