@@ -102,6 +102,7 @@ export default function LeadDetail() {
             <Row label="Plot size" value={`${lead.sqft ? `${lead.sqft} sqft` : ''}${lead.sqft && lead.katha ? ' · ' : ''}${lead.katha ? `${lead.katha} katha` : ''}`} />
           )}
           <Row label="Location" value={lead.location_preference || '—'} />
+          {lead.purpose && <Row label="Purpose" value={lead.purpose} />}
           {lead.notes && <Row label="Notes" value={lead.notes} />}
         </div>
 

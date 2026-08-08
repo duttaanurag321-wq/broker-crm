@@ -50,9 +50,12 @@ export default function Leads() {
     let list = leads
     if (filters.stage) {
       list = list.filter((l) => l.status === filters.stage)
-    } else {
+    } else if (!selectMode) {
       // Default view keeps closed deals out of the way, same as before —
       // only lifted when the agent explicitly filters for Won/Lost.
+      // While selecting for bulk actions (delete, etc.) that hiding gets
+      // out of the way too — otherwise a Won/Lost lead can never be
+      // selected, so "delete all" quietly leaves it behind forever.
       list = list.filter((l) => l.status !== 'won' && l.status !== 'lost')
     }
     if (filters.outcome) list = list.filter((l) => l.call_status === filters.outcome)

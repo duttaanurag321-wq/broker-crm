@@ -5,7 +5,7 @@ import { useAuth } from '../lib/AuthContext.jsx'
 import TopBar from '../components/TopBar.jsx'
 import Sheet from '../components/Sheet.jsx'
 import { ListSkeleton } from '../components/Loader.jsx'
-import { IconSearch } from '../components/Icons.jsx'
+import { IconSearch, IconCalendar } from '../components/Icons.jsx'
 import { displayPhone, formatDateHuman, formatINRCompact, toLocalDateStr } from '../lib/helpers.js'
 import { LEAD_ORIGINS, LEAD_ORIGIN_MAP } from '../lib/constants.js'
 
@@ -171,12 +171,7 @@ export default function LeadPool() {
         {LEAD_ORIGINS.map((o) => (
           <PillOption key={o.key} label={o.label} active={originFilter === o.key} onClick={() => setOriginFilter(o.key)} />
         ))}
-        <input
-          type="date"
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
-          className="ml-auto flex-shrink-0 w-[135px] rounded-full border border-line bg-white px-2.5 py-1 text-xs"
-        />
+        <DateFilterField value={dateFilter} onChange={setDateFilter} />
         {dateFilter && (
           <button onClick={() => setDateFilter('')} className="press text-xs font-semibold text-accent">
             Clear date
@@ -268,6 +263,29 @@ export default function LeadPool() {
           </button>
         </div>
       </Sheet>
+    </div>
+  )
+}
+
+function DateFilterField({ value, onChange }) {
+  // A bare <input type="date"> shows nothing at all on many mobile
+  // browsers until it has a value — no placeholder, no calendar icon,
+  // just an empty box that looks broken. This draws a normal-looking
+  // pill (icon + "Date" or the picked date) and keeps the real date
+  // input invisible on top of it purely to catch the tap and open the
+  // native picker — so it never looks blank, before or after picking.
+  return (
+    <div className="relative flex-shrink-0">
+      <div className="flex items-center gap-1.5 rounded-full border border-line bg-white pl-2.5 pr-3 py-1.5 text-xs font-medium pointer-events-none">
+        <IconCalendar size={13} className="text-muted flex-shrink-0" />
+        <span className={value ? 'text-ink' : 'text-muted'}>{value ? formatDateHuman(value) : 'Date'}</span>
+      </div>
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="absolute inset-0 w-full h-full opacity-0"
+      />
     </div>
   )
 }

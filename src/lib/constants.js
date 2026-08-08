@@ -48,6 +48,11 @@ export const LEAD_ORIGINS = [
 ]
 export const LEAD_ORIGIN_MAP = Object.fromEntries(LEAD_ORIGINS.map((o) => [o.key, o]))
 
+// Why the lead is buying — set after the first real conversation, not at
+// creation, since you usually don't know this until you've actually
+// spoken to them.
+export const LEAD_PURPOSES = ['Residential', 'Investment', 'Residential + Investment', 'Commercial', 'Other']
+
 // 1 katha = 720 sq ft (local North Bengal convention)
 export const SQFT_PER_KATHA = 720
 

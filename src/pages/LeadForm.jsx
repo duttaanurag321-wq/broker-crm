@@ -143,7 +143,7 @@ export default function LeadForm() {
         </div>
         <p className="text-[11px] text-muted -mt-2">1 katha = 720 sqft — fill either one, the other fills itself.</p>
 
-        <Field label="Location (optional for a fresh cold lead)">
+        <Field label="Lead's location — city/area (optional for a fresh cold lead)">
           <input value={form.location_preference} onChange={(e) => set('location_preference', e.target.value)} className="input" placeholder="e.g. Sevoke Road, Siliguri" />
         </Field>
         <p className="text-[11px] text-muted -mt-2">

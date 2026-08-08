@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Sheet from './Sheet.jsx'
-import { CALL_OUTCOMES, STAGES } from '../lib/constants.js'
+import { CALL_OUTCOMES, STAGES, LEAD_PURPOSES } from '../lib/constants.js'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import { todayStr } from '../lib/helpers.js'
@@ -23,8 +23,10 @@ export default function FollowUpSheet({ lead, open, onClose, onSaved }) {
   const [followTime, setFollowTime] = useState('')
   const [notes, setNotes] = useState('')
   const [location, setLocation] = useState('')
+  const [purpose, setPurpose] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [locationSkipped, setLocationSkipped] = useState(false)
 
   // The sheet component stays mounted and gets reused for whichever
   // lead was tapped — without this, the stage/outcome/etc from the
@@ -38,6 +40,8 @@ export default function FollowUpSheet({ lead, open, onClose, onSaved }) {
       setFollowTime('')
       setNotes('')
       setLocation(lead.location_preference || '')
+      setPurpose(lead.purpose || '')
+      setLocationSkipped(false)
       setError('')
     }
   }, [open, lead?.id])
@@ -53,8 +57,12 @@ export default function FollowUpSheet({ lead, open, onClose, onSaved }) {
       setError('Pick the call outcome first.')
       return
     }
-    if (needsLocation && !location.trim()) {
-      setError("This lead has no location yet — add one before logging the call.")
+    // Location is asked once, right after the first real conversation —
+    // but it's a nudge, not a gate. If they genuinely don't have it yet,
+    // the call still gets logged; nothing here should block that.
+    if (needsLocation && !location.trim() && !locationSkipped) {
+      setError("No location yet — that's fine, but tap Save again to confirm and log the call anyway.")
+      setLocationSkipped(true)
       return
     }
     if (!isFinal && (!nextAction.trim() || !followDate)) {
@@ -81,7 +89,8 @@ export default function FollowUpSheet({ lead, open, onClose, onSaved }) {
         .update({
           status: stage,
           call_status: outcome,
-          location_preference: needsLocation ? location.trim() : lead.location_preference,
+          location_preference: location.trim() ? location.trim() : lead.location_preference,
+          purpose: purpose || lead.purpose || null,
           next_action: isFinal ? null : nextAction,
           next_followup_date: isFinal ? null : followDate,
           next_followup_time: isFinal ? null : followTime || null,
@@ -124,16 +133,37 @@ export default function FollowUpSheet({ lead, open, onClose, onSaved }) {
 
         {needsLocation && (
           <div>
-            <p className="text-sm font-semibold mb-2">Location (required — first call)</p>
+            <p className="text-sm font-semibold mb-2">Lead's location (city / area)</p>
             <input
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
+              onChange={(e) => {
+                setLocation(e.target.value)
+                setLocationSkipped(false)
+              }}
               placeholder="e.g. Sevoke Road, Siliguri"
               className="w-full rounded-xl border border-line px-3 py-2.5 text-sm bg-base"
             />
-            <p className="text-[11px] text-muted mt-1">Now that you've spoken to them, pin down where they're looking.</p>
+            <p className="text-[11px] text-muted mt-1">Where the lead is based — not the property they're looking at. Asked once; leave blank if you don't have it yet.</p>
           </div>
         )}
+
+        <div>
+          <p className="text-sm font-semibold mb-2">Purpose (optional)</p>
+          <div className="flex flex-wrap gap-1.5">
+            {LEAD_PURPOSES.map((p) => (
+              <button
+                key={p}
+                onClick={() => setPurpose(purpose === p ? '' : p)}
+                className={`press px-3 py-1.5 rounded-full text-xs font-semibold border ${
+                  purpose === p ? 'bg-ink text-white border-ink' : 'bg-base text-ink border-line'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted mt-1">Why they're buying — residential, investment, commercial, etc. Set this once you actually know.</p>
+        </div>
 
         <div>
           <p className="text-sm font-semibold mb-2">Pipeline stage</p>

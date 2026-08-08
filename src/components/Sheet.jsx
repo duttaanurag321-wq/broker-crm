@@ -1,11 +1,27 @@
+import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { IconClose } from './Icons.jsx'
 
 export default function Sheet({ open, onClose, title, children }) {
+  // Without this, the page underneath keeps its own scroll/touch handling
+  // active while the sheet is open. On mobile that causes exactly the
+  // "lags, scrolls sideways, the content behind it moves instead" glitch —
+  // the sheet's swipe gets fought over by (or leaks through to) the page
+  // scrolling behind it. Locking the body while a sheet is open, and
+  // letting only the sheet's own content contain its scroll, fixes it.
+  useEffect(() => {
+    if (!open) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prevOverflow
+    }
+  }, [open])
+
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
+        <div className="fixed inset-0 z-50 flex items-end justify-center overscroll-contain">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -18,7 +34,8 @@ export default function Sheet({ open, onClose, title, children }) {
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 32, stiffness: 320 }}
-            className="relative w-full max-w-md bg-white rounded-t-[28px] shadow-card max-h-[88vh] overflow-y-auto safe-bottom"
+            className="relative w-full max-w-md bg-white rounded-t-[28px] shadow-card max-h-[88vh] overflow-y-auto overscroll-contain safe-bottom"
+            style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
           >
             <div className="sticky top-0 bg-white/95 backdrop-blur-xl px-5 pt-3 pb-3 border-b border-line flex items-center justify-between rounded-t-[28px]">
               <div className="w-9 h-1.5 rounded-full bg-line absolute left-1/2 -translate-x-1/2 top-2" />

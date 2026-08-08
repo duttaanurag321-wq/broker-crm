@@ -28,7 +28,13 @@ export default function TodayWork() {
       .eq('assigned_to', user.id)
       .lte('next_followup_date', today)
       .not('status', 'in', '("won","lost")')
+      // Earliest date first — and within the same date, a follow-up with
+      // a time set jumps ahead of one without, earliest time first. Without
+      // the second `.order()`, same-day leads came back in whatever order
+      // the database happened to store them, which looked random and
+      // ignored the whole point of setting a time.
       .order('next_followup_date', { ascending: true })
+      .order('next_followup_time', { ascending: true, nullsFirst: false })
 
     const { data: todaysActivities } = await supabase
       .from('activities')
