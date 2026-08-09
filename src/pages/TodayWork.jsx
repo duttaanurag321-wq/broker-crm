@@ -26,15 +26,19 @@ export default function TodayWork() {
     const { startISO, endISO } = localDayBoundsUTC(today)
 
     // Follow-ups: leads that have already been called at least once and
-    // have a follow-up date due. New leads never get a follow-up date
-    // until the first call is logged (see LeadForm/BulkUpload/Apps
-    // Script), so this list naturally never mixes in un-called leads —
-    // no extra filter needed here for that.
+    // have a follow-up date due. New leads created after this update
+    // never get a follow-up date until the first call, so they wouldn't
+    // need this filter — but leads created BEFORE this update may still
+    // have an old auto-set "today" date sitting on them despite never
+    // being called. `call_status` only ever gets set by logging a call
+    // (see FollowUpSheet), so requiring it here is what actually keeps
+    // this list and the New Leads list from overlapping on old data.
     const { data: due } = await supabase
       .from('leads')
       .select('*')
       .eq('assigned_to', user.id)
       .lte('next_followup_date', today)
+      .not('call_status', 'is', null)
       .not('status', 'in', '("won","lost")')
       .order('next_followup_date', { ascending: true })
       .order('next_followup_time', { ascending: true, nullsFirst: false })
