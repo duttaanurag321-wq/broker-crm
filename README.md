@@ -306,6 +306,19 @@ change the number, hit Save, and every agent's ring reflects it immediately.
 
 ---
 
+## New Leads vs Follow-ups
+
+The Home screen now has two tabs: **Follow-ups** (leads you've already spoken to, due today or
+overdue) and **New Leads** (leads that haven't been called even once). A lead only moves into
+Follow-ups once you log its first call — creating or importing a lead no longer auto-schedules it
+for "today"; it just waits in New Leads until you get to it. This also means you can spend a day
+only clearing Follow-ups, or only working through New Leads, without them being mixed together.
+
+No SQL to run for this — it only changes when a follow-up date gets set (now: after the first call,
+not at creation), not the database structure.
+
+---
+
 ## Project structure
 
 ```

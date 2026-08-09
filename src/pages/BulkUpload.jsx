@@ -4,7 +4,7 @@ import Papa from 'papaparse'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import TopBar from '../components/TopBar.jsx'
-import { normalizeIndianPhone, todayStr } from '../lib/helpers.js'
+import { normalizeIndianPhone } from '../lib/helpers.js'
 
 function guessField(headers, candidates) {
   const lower = headers.map((h) => h.toLowerCase().trim())
@@ -91,7 +91,6 @@ export default function BulkUpload() {
     }
     setPreviewing(true)
     setError('')
-    const today = todayStr()
     const mapped = rows
       .map((r) => ({
         name: (r[mapping.name] || '').trim(),
@@ -104,8 +103,10 @@ export default function BulkUpload() {
         location_preference: mapping.location_preference ? r[mapping.location_preference] || null : null,
         notes: mapping.notes ? r[mapping.notes] || null : null,
         status: 'new',
-        next_action: 'Make first call',
-        next_followup_date: today,
+        // Imported leads sit idle in "New Leads" — no follow-up date until
+        // the first call is actually logged, same as a manually added lead.
+        next_action: null,
+        next_followup_date: null,
         origin: 'csv_import',
         created_by: user.id,
         assigned_to: assignMode === 'self' ? user.id : null

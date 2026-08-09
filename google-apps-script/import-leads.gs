@@ -120,10 +120,11 @@ function importNewLeads() {
 
       const notes = notesCol !== -1 ? String(row[notesCol] || '').trim() : ''
       const source = sourceCol !== -1 && row[sourceCol] ? String(row[sourceCol]).trim() : DEFAULT_SOURCE
-      const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Kolkata', 'yyyy-MM-dd')
 
       // Left unassigned on purpose — it lands in the Lead Pool, and an
       // admin assigns it (specific agent or Round Robin) from there.
+      // Also left with no follow-up date: it sits in "New Leads" until
+      // the assigned agent logs the first call, same as any other lead.
       const payload = {
         name,
         phone: rawPhone,
@@ -131,8 +132,8 @@ function importNewLeads() {
         notes: notes || null,
         status: 'new',
         call_status: null, // no calls made yet — CRM shows this as "No calls yet", i.e. pending
-        next_action: 'Call new lead',
-        next_followup_date: today,
+        next_action: null,
+        next_followup_date: null,
         origin: 'facebook',
         assigned_to: null,
         created_by: adminId

@@ -121,7 +121,11 @@ export default function LeadDetail() {
             </>
           ) : (
             <p className="text-sm text-muted mt-1">
-              {lead.status === 'won' || lead.status === 'lost' ? 'Closed — no follow-up needed.' : 'No follow-up set.'}
+              {lead.status === 'won' || lead.status === 'lost'
+                ? 'Closed — no follow-up needed.'
+                : lead.call_status
+                ? 'No follow-up set.'
+                : "Not called yet — log the first call to set one."}
             </p>
           )}
         </div>

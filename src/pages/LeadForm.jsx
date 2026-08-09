@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import TopBar from '../components/TopBar.jsx'
 import { LEAD_SOURCES, SQFT_PER_KATHA } from '../lib/constants.js'
-import { normalizeIndianPhone, todayStr } from '../lib/helpers.js'
+import { normalizeIndianPhone } from '../lib/helpers.js'
 
 const empty = {
   name: '',
@@ -16,8 +16,8 @@ const empty = {
   katha: '',
   location_preference: '',
   notes: '',
-  next_action: 'Make first call',
-  next_followup_date: todayStr(),
+  next_action: '',
+  next_followup_date: '',
   next_followup_time: ''
 }
 
@@ -67,7 +67,11 @@ export default function LeadForm() {
     setError('')
     if (!form.name.trim()) return setError('Name is required.')
     if (!form.phone.trim()) return setError('Phone number is required.')
-    if (!form.next_followup_date) return setError('A first follow-up date is required for every lead.')
+    // A brand-new, never-called lead deliberately gets NO follow-up date —
+    // it sits in "New Leads" until the first call is logged, instead of
+    // auto-appearing in Today's follow-up list on day one. Editing an
+    // already-contacted lead still needs a valid date, same as before.
+    if (editing && !form.next_followup_date) return setError('A follow-up date is required.')
 
     setSaving(true)
     try {
@@ -81,9 +85,9 @@ export default function LeadForm() {
         katha: form.katha || null,
         location_preference: form.location_preference || null,
         notes: form.notes || null,
-        next_action: form.next_action || 'Make first call',
-        next_followup_date: form.next_followup_date,
-        next_followup_time: form.next_followup_time || null
+        next_action: editing ? form.next_action || null : null,
+        next_followup_date: editing ? form.next_followup_date || null : null,
+        next_followup_time: editing ? form.next_followup_time || null : null
       }
 
       if (editing) {
@@ -154,20 +158,28 @@ export default function LeadForm() {
           <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} rows={3} className="input" placeholder="Anything relevant about this lead" />
         </Field>
 
-        <div className="bg-white rounded-2xl border border-line p-4">
-          <p className="text-sm font-semibold mb-3">First follow-up (required)</p>
-          <Field label="Next action">
-            <input value={form.next_action} onChange={(e) => set('next_action', e.target.value)} className="input" />
-          </Field>
-          <div className="grid grid-cols-2 gap-3 mt-3">
-            <Field label="Date">
-              <input type="date" value={form.next_followup_date} onChange={(e) => set('next_followup_date', e.target.value)} className="input" />
+        {editing && (
+          <div className="bg-white rounded-2xl border border-line p-4">
+            <p className="text-sm font-semibold mb-3">Next follow-up</p>
+            <Field label="Next action">
+              <input value={form.next_action} onChange={(e) => set('next_action', e.target.value)} className="input" />
             </Field>
-            <Field label="Time (optional)">
-              <input type="time" value={form.next_followup_time} onChange={(e) => set('next_followup_time', e.target.value)} className="input" />
-            </Field>
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <Field label="Date">
+                <input type="date" value={form.next_followup_date} onChange={(e) => set('next_followup_date', e.target.value)} className="input" />
+              </Field>
+              <Field label="Time (optional)">
+                <input type="time" value={form.next_followup_time} onChange={(e) => set('next_followup_time', e.target.value)} className="input" />
+              </Field>
+            </div>
           </div>
-        </div>
+        )}
+
+        {!editing && (
+          <p className="text-[11px] text-muted -mt-2">
+            This lead will sit in <strong>New Leads</strong> — it won't show up as a follow-up until you log the first call.
+          </p>
+        )}
 
         {error && <p className="text-sm text-danger font-medium">{error}</p>}
 

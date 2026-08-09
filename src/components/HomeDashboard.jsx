@@ -33,6 +33,7 @@ export default function HomeDashboard() {
       { data: scheduledTodayRows },
       { count: unassignedCount },
       { count: hotCount },
+      { count: uncalledCount },
       { data: monthActs }
     ] = await Promise.all([
       supabase.from('app_settings').select('sv_monthly_target').eq('id', 1).maybeSingle(),
@@ -43,6 +44,10 @@ export default function HomeDashboard() {
         ? supabase.from('leads').select('id', { count: 'exact', head: true }).is('assigned_to', null)
         : Promise.resolve({ count: 0 }),
       scopeLead(supabase.from('leads').select('id', { count: 'exact', head: true })).eq('call_status', 'IN').not('status', 'in', '("won","lost")'),
+      // Backlog of never-called leads — distinct from "New Leads Today"
+      // (which is about when they arrived), this is what the Home
+      // screen's "New Leads" tab is showing right now.
+      scopeLead(supabase.from('leads').select('id', { count: 'exact', head: true })).is('call_status', null).not('status', 'in', '("won","lost")'),
       scopeActivity(supabase.from('activities').select('lead_id,stage_at_time,created_at'))
         .in('stage_at_time', ['sv_done', 'won'])
         .gte('created_at', monthStart)
@@ -104,6 +109,7 @@ export default function HomeDashboard() {
       newLeadsToday: newLeadsToday || 0,
       unassignedCount: unassignedCount || 0,
       hotCount: hotCount || 0,
+      uncalledCount: uncalledCount || 0,
       leadToSvRate: newLeadsMonth ? Math.round((monthlySvDone / newLeadsMonth) * 100) : null,
       svToBookingRate: monthlySvDone ? Math.round((monthlyWon / monthlySvDone) * 100) : null
     })
@@ -173,6 +179,7 @@ export default function HomeDashboard() {
 
       {/* Secondary metrics — smaller, supporting */}
       <div className="grid grid-cols-2 gap-3">
+        <StatTile label="Leads to Call" value={data.uncalledCount} hint="Never contacted yet" />
         <StatTile label="New Leads Today" value={data.newLeadsToday} />
         <StatTile
           label="Hot Leads"
