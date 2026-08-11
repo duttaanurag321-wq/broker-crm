@@ -4,12 +4,13 @@ import { useAuth } from '../lib/AuthContext.jsx'
 import TopBar from '../components/TopBar.jsx'
 import LeadCard from '../components/LeadCard.jsx'
 import { ListSkeleton } from '../components/Loader.jsx'
+import { usePersistedState } from '../lib/usePersistedState.js'
 import { OPEN_STAGES, STAGE_MAP } from '../lib/constants.js'
 
 export default function Pipeline() {
   const { user } = useAuth()
   const [leads, setLeads] = useState([])
-  const [activeStage, setActiveStage] = useState('all')
+  const [activeStage, setActiveStage] = usePersistedState('pipeline:stage', 'all')
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {

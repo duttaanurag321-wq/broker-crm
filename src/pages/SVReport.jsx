@@ -5,6 +5,7 @@ import { useAuth } from '../lib/AuthContext.jsx'
 import TopBar from '../components/TopBar.jsx'
 import Sheet from '../components/Sheet.jsx'
 import { PageLoader } from '../components/Loader.jsx'
+import { usePersistedState } from '../lib/usePersistedState.js'
 import { displayPhone, toLocalDateStr, formatDateHuman } from '../lib/helpers.js'
 import { STAGES } from '../lib/constants.js'
 
@@ -24,8 +25,8 @@ const SV_DONE_RANK = STAGE_ORDER.indexOf('sv_done')
 
 export default function SVReport() {
   const { user } = useAuth()
-  const [range, setRange] = useState('week') // 'week' | 'month'
-  const [anchor, setAnchor] = useState(new Date())
+  const [range, setRange] = usePersistedState('svreport:range', 'week') // 'week' | 'month'
+  const [anchor, setAnchor] = usePersistedState('svreport:anchor', new Date())
   const [activities, setActivities] = useState([])
   const [leadMap, setLeadMap] = useState(new Map())
   const [loading, setLoading] = useState(true)

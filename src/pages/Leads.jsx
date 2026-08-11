@@ -7,6 +7,7 @@ import LeadCard from '../components/LeadCard.jsx'
 import Sheet from '../components/Sheet.jsx'
 import { ListSkeleton } from '../components/Loader.jsx'
 import { useLeadsRealtime } from '../lib/useLeadsRealtime.js'
+import { usePersistedState } from '../lib/usePersistedState.js'
 import { IconPlus, IconUpload, IconSearch, IconFilter, IconInbox } from '../components/Icons.jsx'
 import { STAGES, CALL_OUTCOMES, LEAD_SOURCES } from '../lib/constants.js'
 
@@ -16,9 +17,13 @@ export default function Leads() {
   const { user, profile } = useAuth()
   const isAdmin = profile?.role === 'admin'
   const [leads, setLeads] = useState([])
-  const [query, setQuery] = useState('')
+  // Persisted (not plain useState) so opening a lead and coming back
+  // doesn't wipe out what you'd searched/filtered for — the Leads and
+  // Lead Detail pages are siblings in the router, so this component
+  // fully remounts on the way back otherwise.
+  const [query, setQuery] = usePersistedState('leads:query', '')
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState(EMPTY_FILTERS)
+  const [filters, setFilters] = usePersistedState('leads:filters', EMPTY_FILTERS)
   const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS)
   const [filterOpen, setFilterOpen] = useState(false)
   const [selectMode, setSelectMode] = useState(false)

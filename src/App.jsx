@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
 import { useAuth } from './lib/AuthContext.jsx'
+import { useScrollRestoration } from './lib/useScrollRestoration.js'
 import BottomNav from './components/BottomNav.jsx'
 import { SplashLoader } from './components/Loader.jsx'
 import Login from './pages/Login.jsx'
@@ -15,11 +15,8 @@ import DailyReport from './pages/DailyReport.jsx'
 import SVReport from './pages/SVReport.jsx'
 import Settings from './pages/Settings.jsx'
 
-function ScrollToTop() {
-  const { pathname } = useLocation()
-  useEffect(() => {
-    document.getElementById('root')?.scrollTo(0, 0)
-  }, [pathname])
+function ScrollRestoration() {
+  useScrollRestoration()
   return null
 }
 
@@ -36,7 +33,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-base">
-      <ScrollToTop />
+      <ScrollRestoration />
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
         <Route

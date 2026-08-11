@@ -5,12 +5,13 @@ import { useAuth } from '../lib/AuthContext.jsx'
 import TopBar from '../components/TopBar.jsx'
 import { PageLoader } from '../components/Loader.jsx'
 import { CALL_OUTCOMES } from '../lib/constants.js'
+import { usePersistedState } from '../lib/usePersistedState.js'
 import { todayStr, formatDateHuman, localDayBoundsUTC } from '../lib/helpers.js'
 import { IconReports } from '../components/Icons.jsx'
 
 export default function DailyReport() {
   const { user, profile } = useAuth()
-  const [date, setDate] = useState(todayStr())
+  const [date, setDate] = usePersistedState('dailyreport:date', todayStr())
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const isAdmin = profile?.role === 'admin'

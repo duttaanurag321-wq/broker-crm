@@ -319,6 +319,21 @@ not at creation), not the database structure.
 
 ---
 
+## Icons & navigation feel
+
+Icons across the whole app now come from one consistent set (Phosphor Icons, filled style) instead
+of the old thin hand-drawn ones — same places, same meanings, just a bolder, more modern look. Only
+`components/Icons.jsx` changed for this; nothing else needed to know about it.
+
+Also fixed: opening a lead from a list, editing/logging a call, and going back no longer dumps you
+back at the top with your search/filters/tab reset. Your scroll position, search text, active
+filters, and which tab you were on (Leads, Lead Pool, Pipeline, Today's Work, Reports) are now
+remembered for the rest of your session — going back feels like you never left.
+
+No SQL, no Apps Script changes for this update — purely frontend.
+
+---
+
 ## Project structure
 
 ```

@@ -7,13 +7,14 @@ import LeadCard from '../components/LeadCard.jsx'
 import FollowUpSheet from '../components/FollowUpSheet.jsx'
 import { ListSkeleton } from '../components/Loader.jsx'
 import { useLeadsRealtime } from '../lib/useLeadsRealtime.js'
+import { usePersistedState } from '../lib/usePersistedState.js'
 import { IconFire } from '../components/Icons.jsx'
 import { todayStr, localDayBoundsUTC } from '../lib/helpers.js'
 import HomeDashboard from '../components/HomeDashboard.jsx'
 
 export default function TodayWork() {
   const { user, profile } = useAuth()
-  const [tab, setTab] = useState('followups') // 'followups' | 'new'
+  const [tab, setTab] = usePersistedState('todaywork:tab', 'followups') // 'followups' | 'new'
   const [leads, setLeads] = useState([])
   const [doneLeadIds, setDoneLeadIds] = useState(new Set())
   const [newLeads, setNewLeads] = useState([])

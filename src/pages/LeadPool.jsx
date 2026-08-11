@@ -5,6 +5,7 @@ import { useAuth } from '../lib/AuthContext.jsx'
 import TopBar from '../components/TopBar.jsx'
 import Sheet from '../components/Sheet.jsx'
 import { ListSkeleton } from '../components/Loader.jsx'
+import { usePersistedState } from '../lib/usePersistedState.js'
 import { IconSearch, IconCalendar } from '../components/Icons.jsx'
 import { displayPhone, formatDateHuman, formatINRCompact, toLocalDateStr } from '../lib/helpers.js'
 import { LEAD_ORIGINS, LEAD_ORIGIN_MAP } from '../lib/constants.js'
@@ -14,9 +15,9 @@ export default function LeadPool() {
   const [leads, setLeads] = useState([])
   const [agents, setAgents] = useState([])
   const [loading, setLoading] = useState(true)
-  const [query, setQuery] = useState('')
-  const [originFilter, setOriginFilter] = useState('')
-  const [dateFilter, setDateFilter] = useState('')
+  const [query, setQuery] = usePersistedState('leadpool:query', '')
+  const [originFilter, setOriginFilter] = usePersistedState('leadpool:origin', '')
+  const [dateFilter, setDateFilter] = usePersistedState('leadpool:date', '')
   const [selected, setSelected] = useState(new Set())
   const [assignOpen, setAssignOpen] = useState(false)
   const [assigning, setAssigning] = useState(false)
